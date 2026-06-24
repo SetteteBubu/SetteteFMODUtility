@@ -9,13 +9,26 @@ public static class FfmpegUtils
     {
         get
         {
+            //Git package flow
+            var packageInfo = UnityEditor.PackageManager.PackageInfo
+                .FindForAssembly(typeof(FfmpegUtils).Assembly);
+
+            string ffmpegExe = Application.platform == RuntimePlatform.WindowsEditor
+                ? "ffmpeg.exe"
+                : "ffmpeg";
+
+            if (packageInfo != null)
+                return Path.Combine(packageInfo.resolvedPath, "Plugins", "FFMPEG", "bin", ffmpegExe);
+
+            //Development project flow
             string projectRoot = Directory.GetParent(Application.dataPath).FullName;
 
             return Path.Combine(
                             projectRoot,
                             "Assets",
                             "Plugins",
-                            "SetteteFMODUtility",
+                            "com.settete.settete-fmod-utility",
+                            "Plugins",
                             "FFMPEG",
                             "bin",
                             "ffmpeg.exe");
