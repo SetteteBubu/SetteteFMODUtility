@@ -1,0 +1,18 @@
+{
+    "name": "Settete.FMODUtility.Runtime",
+    "rootNamespace": "Settete.FMODUtility.Runtime",
+    "references": [
+        "FMODUnity",
+        "Unity.TextMeshPro",
+        "FMODUnityEditor"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

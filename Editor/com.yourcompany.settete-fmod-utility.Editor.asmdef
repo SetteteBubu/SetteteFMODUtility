@@ -1,0 +1,20 @@
+{
+    "name": "Settete.FMODUtility.Editor",
+    "rootNamespace": "Settete.FMODUtility.Editor",
+    "references": [
+        "Settete.FMODUtility.Runtime",
+        "FMODUnity",
+        "FMODUnityEditor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
