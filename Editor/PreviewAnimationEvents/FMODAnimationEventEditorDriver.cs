@@ -86,20 +86,9 @@ public static class FMODAnimationEventEditorDriver
     private static void FireEvent(AnimationEvent evt)
     {
         if (string.IsNullOrEmpty(evt.functionName)) return;
+        if (evt.functionName != SetteteFMODUtilityManager.AnimationEventsFunctionNameConstant) return;
 
-        //Look through our registered FMOD Preview events and fire it
-        SetteteFMODUtilityManager setteteFMODUtilityManagerGameObject = GameObject.FindFirstObjectByType<SetteteFMODUtilityManager>(FindObjectsInactive.Include);
-        if(setteteFMODUtilityManagerGameObject != null)
-        {
-            foreach(var previewEventData in setteteFMODUtilityManagerGameObject.previewAnimationEventDatas)
-            {
-                if(previewEventData.animationEventFunctionName == evt.functionName &&
-                    previewEventData.animationEventStringParameter == evt.stringParameter)
-                {
-                    FMODEditorPreview.PlayOneShot(previewEventData.previewEvent.Path);
-                }
-            }
-        }
+        FMODEditorPreview.PlayOneShot(evt.stringParameter);
     }
 
     private static void OnBeforeAssemblyReload()

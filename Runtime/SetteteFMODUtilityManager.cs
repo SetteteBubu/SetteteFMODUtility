@@ -13,6 +13,8 @@ using UnityEngine.UI;
 [RequireComponent(typeof(SetteteFMODUtilityDebugManager))]
 public class SetteteFMODUtilityManager : MonoBehaviour
 {
+    public static readonly string AnimationEventsFunctionNameConstant = "SetteteAudio";
+
     [Serializable]
     public struct LocalParameterData
     {
@@ -63,15 +65,11 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     public Color defaultSelectedAnimatorCurrentStateColor = Color.black;
     [Tooltip("Referenced just to grab Unity's built-in sprite, but feel free to customize")]
     public Sprite defaultSelectedAnimatorCurrentStateImage;
-    [Serializable]
-    public class PreviewAnimationEventData
-    {
-        public string animationEventFunctionName;
-        public string animationEventStringParameter;
-        public EventReference previewEvent;
-    }
+
     [Header("Preview Animation Events")]
-    public List<PreviewAnimationEventData> previewAnimationEventDatas;
+    [ReadOnly]
+    //Function to call on SetteteAnimationEventReceiver to trigger audio. Will also be used to preview events in editor
+    public readonly string AnimationEventsFunctionName = AnimationEventsFunctionNameConstant;
 
     [Header("Debug UI Settings")]
     [Tooltip("Should be on top of everything but feel free to change if needed")]
@@ -600,7 +598,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         scrollRect.vertical = true;
 
         //Scroll is scrolled upwards to the max by default
-        scrollRect.normalizedPosition = new Vector2(0f, 0f);
+        scrollRect.normalizedPosition = Vector2.zero;
         scrollRect.movementType = ScrollRect.MovementType.Clamped;
         scrollRect.inertia = false;
         scrollRect.scrollSensitivity = defaultScrollSensitivity;
@@ -771,6 +769,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
                 debugUIScrollRect.transform.GetChild(0).GetComponent<Image>().sprite = defaultViewportImage;
             }
             debugUIScrollRect.scrollSensitivity = defaultScrollSensitivity;
+            debugUIScrollRect.normalizedPosition = Vector2.zero;
         }
         //Synch debug UI scroll content
         if (debugUIScrollContent != null)
