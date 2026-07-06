@@ -92,7 +92,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     [Tooltip("2D UI Element default height which effectively dictates font size for the text")]
     public float default2DEventUIElementHeight = 30f;
     [Tooltip("Color used to draw text in UI related to 2D events")]
-    public Color events2DColor = Color.orange;
+    public Color events2DColor = new(1f, 0.6470588f, 0f, 1f);
     public TextAnchor defaultDebugUIAnchoring = TextAnchor.LowerLeft;
     [Tooltip("Default debug UI scroll sensitivity")]
     public float defaultScrollSensitivity = 10f;
