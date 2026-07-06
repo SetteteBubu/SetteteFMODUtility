@@ -14,11 +14,7 @@ public class SetteteFMODUtilityDebugManager : MonoBehaviour
 
     public GameDebugConfig GetDebugConfig()
     {
-#if UNITY_DEBUG
-		return m_config?.Data;
-#else
         return new GameDebugConfig();
-#endif
     }
 
     static bool CanAddDraw()
@@ -28,7 +24,6 @@ public class SetteteFMODUtilityDebugManager : MonoBehaviour
 #else
             return false;
 #endif
-
     }
 
     public GizmoGroup CreateGizmoGroup(string _name)
