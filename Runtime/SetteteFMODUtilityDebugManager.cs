@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 public class SetteteFMODUtilityDebugManager : MonoBehaviour
 {
@@ -58,7 +59,8 @@ public class SetteteFMODUtilityDebugManager : MonoBehaviour
     public void DrawText(string _text, Vector3 _pos, Color _color, int _fontSize = 20, float _lifeTime = 0.0f, TextAnchor _alligment = TextAnchor.UpperLeft, object _controlToken = null)
     {
         if (!CanAddDraw()) return;
-        m_drawCalls.Add(new TextDrawRequest { Text = _text, Position = _pos, Color = _color, FontSize = _fontSize, LifeTime = _lifeTime, Allignment = _alligment, ControlToken = _controlToken });
+        if (!m_drawCalls.Any(x => x.ControlToken.Equals(_controlToken)))
+            m_drawCalls.Add(new TextDrawRequest { Text = _text, Position = _pos, Color = _color, FontSize = _fontSize, LifeTime = _lifeTime, Allignment = _alligment, ControlToken = _controlToken });
     }
 
     public void UpdateDrawingPosition(object _controlToken, Vector3 _pos)

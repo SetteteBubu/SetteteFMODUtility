@@ -30,7 +30,10 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         public string[] lutEntries;
     }
 
-    [Header("3D Events Settings")]
+    [Tooltip("Turn on/off the whole 3D events visualization")]
+    public bool visualize3DEvents = false;
+    [Tooltip("Turn on/off the whole 3D events text visualization")]
+    public bool visualize3DEventsTexts = false;
     [Tooltip("Color used to draw text gizmos related to 3D events")]
     public Color events3DColor = Color.red;
     [Tooltip("Font size used to draw text gizmos related to 3D events")]
@@ -42,19 +45,22 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     [Tooltip("Default color used to draw the attenuation curve max sphere for 3D events")]
     public Color defaultAttenuationCurveMaxColor = Color.yellow;
 
-    [Header("Filters")]
     [Tooltip("Only visualize 3D events sharing the set path root. Clear field to remove filter")]
     public string events3DPathRootFilter;
     [Tooltip("Only visualize 3D events attenuation curve sharing the set path root. Clear field to remove filter")]
     public string events3DAttenuationCurvePathRootFilter;
 
-    [Header("Miscellaneous Settings")]
+    [Tooltip("Turn on/off the whole loaded FMOD banks visualization")]
+    public bool visualizeLoadedBanks = false;
+    [Tooltip("Color used to draw text in UI related to loaded FMOD banks")]
+    public Color banksColor = Color.cyan;
+
+    [Header("Refresh Rate Settings")]
     [Tooltip("Delay in seconds between each active instances refresh")]
     public float activeInstancesRefreshDelay = 1f;
 
-    [Header("Animation Settings")]
     [Tooltip("Visualize information regarding current animation and state of Animator in selected GameObject")]
-    public bool visualizeSelectedAnimatorCurrentState = true;
+    public bool visualizeSelectedAnimatorCurrentState = false;
     [Tooltip("Anchoring of panel displaying info regarding current animation and state of Animator in selected GameObject")]
     public TextAnchor defaultSelectedAnimatorCurrentStateAnchor = TextAnchor.UpperRight;
     [Tooltip("Width of panel displaying info regarding current animation and state of Animator in selected GameObject")]
@@ -71,7 +77,8 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     //Function to call on SetteteAnimationEventReceiver to trigger audio. Will also be used to preview events in editor
     public readonly string AnimationEventsFunctionName = AnimationEventsFunctionNameConstant;
 
-    [Header("Debug UI Settings")]
+    [Tooltip("Turn on/off the whole 2D events visualization")]
+    public bool enable2DEventsVisualization = false;
     [Tooltip("Should be on top of everything but feel free to change if needed")]
     public int defaultDebugUICanvasSortingOrder = 999;
     [Tooltip("Referenced just to grab Unity's built-in sprite, but feel free to customize")]
@@ -90,7 +97,8 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     [Tooltip("Default debug UI scroll sensitivity")]
     public float defaultScrollSensitivity = 10f;
 
-    [Header("Parameters")]
+    [Tooltip("Turn on/off the whole parameters visualization")]
+    public bool enableParameterVisualization = false;
     [ParamRef]
     public string[] globalParametersToLog;
     public LocalParameterData[] localParameterDatas;
@@ -109,6 +117,13 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     private List<string> active3DEventsTokens = new();
     private GameObject animatorInfoPanel;
     private TextMeshProUGUI animatorInfoText;
+    private GameObject globalParametersCategoryGO;
+#if UNITY_EDITOR
+    private GameObject localParametersCategoryGO;
+#endif
+    private GameObject _2DEventsCategoryGO;
+    private GameObject banksCategoryGO;
+    private Dictionary<string, GameObject> cachedBankUIElements;
 
     private Dictionary<string, string> cachedLocalParamValues;
 
@@ -120,6 +135,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         cachedGlobalParametersUIElements = new();
         cachedLocalParametersUIElements = new();
         cachedLocalParamValues = new();
+        cachedBankUIElements = new();
     }
 
     private void Start()
@@ -144,9 +160,64 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         //Update global parameters
         UpdateParameters();
 
+        //Update loaded banks visualization
+        UpdateLoadedBanksUI();
+
 #if UNITY_EDITOR
         HandleAnimatorInfoPanel();
 #endif
+    }
+
+    void UpdateLoadedBanksUI()
+    {
+        if (banksCategoryGO == null) return;
+
+        banksCategoryGO.SetActive(visualizeLoadedBanks);
+
+        if (!visualizeLoadedBanks)
+        {
+            foreach (var go in cachedBankUIElements.Values)
+                go.SetActive(false);
+            return;
+        }
+
+        // Keep the whole "loaded banks" block queued after every other 2D UI entry
+        banksCategoryGO.transform.SetAsLastSibling();
+
+        RuntimeManager.StudioSystem.getBankList(out Bank[] banks);
+        var currentBankPaths = new HashSet<string>();
+
+        foreach (var bank in banks)
+        {
+            bank.getPath(out string bankPath);
+            currentBankPaths.Add(bankPath);
+
+            if (!cachedBankUIElements.TryGetValue(bankPath, out GameObject bankGO))
+            {
+                bankGO = CreateUIElement();
+                cachedBankUIElements.Add(bankPath, bankGO);
+            }
+
+            TextMeshProUGUI bankText = bankGO.GetComponent<TextMeshProUGUI>();
+            bankText.color = banksColor;
+            bankText.text = "• " + System.IO.Path.GetFileName(bankPath);
+            bankGO.SetActive(true);
+            bankGO.transform.SetAsLastSibling();
+        }
+
+        // Clean up UI elements for banks that got unloaded
+        List<string> toRemove = null;
+        foreach (var kvp in cachedBankUIElements)
+        {
+            if (!currentBankPaths.Contains(kvp.Key))
+            {
+                Destroy(kvp.Value);
+                (toRemove ??= new List<string>()).Add(kvp.Key);
+            }
+        }
+        if (toRemove != null)
+            foreach (var key in toRemove)
+                cachedBankUIElements.Remove(key);
     }
 
     void UpdateParameters()
@@ -155,11 +226,13 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         {
             Update2DGlobalParameterUIElement(globalParam);
         }
+        globalParametersCategoryGO.SetActive(enableParameterVisualization);
 #if UNITY_EDITOR
         foreach (var localParam in localParameterDatas)
         {
             UpdateLocalParameterUIElement(localParam);
         }
+        localParametersCategoryGO.SetActive(enableParameterVisualization);
 #endif
     }
 
@@ -179,6 +252,21 @@ public class SetteteFMODUtilityManager : MonoBehaviour
                     attributes.position.y,
                     attributes.position.z
                 );
+
+                if (!visualize3DEvents)
+                {
+                    Stop3DEventVisualization(inst);
+                    continue;
+                }
+                else
+                {
+                    Start3DEventVisualization(inst);
+                }
+
+                if (!visualize3DEventsTexts)
+                {
+                    Stop3DEventVisualization(inst, true, false);
+                }
 
                 //Handle attenuation curve filter
                 if ((!string.IsNullOrEmpty(events3DAttenuationCurvePathRootFilter) && !eventPath.Contains(events3DAttenuationCurvePathRootFilter)) || !visualize3DEventsAttenuationCurve)
@@ -206,7 +294,20 @@ public class SetteteFMODUtilityManager : MonoBehaviour
                     }
                 }
             }
+            else
+            {
+                if (enable2DEventsVisualization)
+                {
+                    Create2DEventUIElement(inst);
+                }
+                else
+                {
+                    Delete2DEventUIElement(inst);
+                }
+            }
         }
+
+        _2DEventsCategoryGO.SetActive(enable2DEventsVisualization);
     }
 
     private void RefreshActiveInstances()
@@ -220,18 +321,33 @@ public class SetteteFMODUtilityManager : MonoBehaviour
             inst.getPlaybackState(out PLAYBACK_STATE state);
             eventDescription.is3D(out bool is3D);
 
-            //Handle instances that are not active anymore
+            //Iterate new active instances to visualize them if needed
             if (!cachedActiveInstances.Any(c => c.handle == inst.handle) && state != PLAYBACK_STATE.STOPPED)
             {
                 if (is3D)
                 {
-                    //Add to 3D events drawn as gizmos
-                    Start3DEventVisualization(inst);
+                    if (visualize3DEvents)
+                    {
+                        //Add to 3D events drawn as gizmos
+                        Start3DEventVisualization(inst);
+                    }
+                    else
+                    {
+                        //Stop visualizing if entire feature is disabled
+                        Stop3DEventVisualization(inst);
+                    }
                 }
                 else
                 {
-                    //Add to 2D events drawn as UI
-                    Create2DEventUIElement(inst);
+                    if (enable2DEventsVisualization)
+                    {
+                        //Add to 2D events drawn as UI
+                        Create2DEventUIElement(inst);
+                    }
+                    else
+                    {
+                        Delete2DEventUIElement(inst);
+                    }
                 }
             }
 
@@ -283,6 +399,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     void Start3DEventAttenuationCurveVisualization(EventInstance eventInstance)
     {
         if (active3DEventsAttenuationCurveTokens.Contains(eventInstance.handle.ToString() + "attenMin")) return;
+        if (!visualize3DEvents) return;
 
         eventInstance.getDescription(out EventDescription eventDescription);
         eventInstance.get3DAttributes(out FMOD.ATTRIBUTES_3D attributes);
@@ -311,6 +428,8 @@ public class SetteteFMODUtilityManager : MonoBehaviour
 
     void Start3DEventVisualization(EventInstance eventInstance)
     {
+        if (!visualize3DEvents) return;
+
         eventInstance.getDescription(out EventDescription eventDescription);
 
         eventDescription.getPath(out string path);
@@ -325,7 +444,8 @@ public class SetteteFMODUtilityManager : MonoBehaviour
             attributes.position.z
         );
 
-        debugManager.DrawText("• " + System.IO.Path.GetFileName(path), instPos, events3DColor, events3DFontSize, float.MaxValue, TextAnchor.MiddleLeft, eventInstance.handle.ToString());
+        if (visualize3DEventsTexts)
+            debugManager.DrawText("• " + System.IO.Path.GetFileName(path), instPos, events3DColor, events3DFontSize, float.MaxValue, TextAnchor.MiddleLeft, eventInstance.handle.ToString());
 
         //Handle attenuation curve visualization
         if (visualize3DEventsAttenuationCurve && (string.IsNullOrEmpty(events3DAttenuationCurvePathRootFilter) || path.Contains(events3DAttenuationCurvePathRootFilter)))
@@ -333,27 +453,39 @@ public class SetteteFMODUtilityManager : MonoBehaviour
             Start3DEventAttenuationCurveVisualization(eventInstance);
         }
 
-        active3DEventsTokens.Add(eventInstance.handle.ToString());
+        if (!active3DEventsTokens.Contains(eventInstance.handle.ToString()))
+        {
+            active3DEventsTokens.Add(eventInstance.handle.ToString());
+        }
     }
 
-    void Stop3DEventVisualization(EventInstance eventInstance)
+    void Stop3DEventVisualization(EventInstance eventInstance, bool disableText = true, bool disableAttenCurve = true)
     {
-        debugManager.StopDrawing(eventInstance.handle.ToString());
-        Stop3DEventAttenuationCurveVisualization(eventInstance);
-        active3DEventsTokens.Remove(eventInstance.handle.ToString());
+        if (disableText)
+        {
+            debugManager.StopDrawing(eventInstance.handle.ToString());
+            active3DEventsTokens.Remove(eventInstance.handle.ToString());
+        }
+        if (disableAttenCurve)
+        {
+            Stop3DEventAttenuationCurveVisualization(eventInstance);
+        }
     }
 
     void Create2DEventUIElement(EventInstance eventInstance)
     {
-        GameObject event2DElement = CreateUIElement();
+        if (!cached2DEventsUIElements.ContainsKey(eventInstance))
+        {
+            GameObject event2DElement = CreateUIElement();
 
-        eventInstance.getDescription(out EventDescription eventDescription);
-        eventDescription.getPath(out string eventPath);
+            eventInstance.getDescription(out EventDescription eventDescription);
+            eventDescription.getPath(out string eventPath);
 
-        TextMeshProUGUI event2DElementText = event2DElement.GetComponent<TextMeshProUGUI>();
-        event2DElementText.text = System.IO.Path.GetFileName(eventPath);
+            TextMeshProUGUI event2DElementText = event2DElement.GetComponent<TextMeshProUGUI>();
+            event2DElementText.text = System.IO.Path.GetFileName(eventPath);
 
-        cached2DEventsUIElements.Add(eventInstance, event2DElement);
+            cached2DEventsUIElements.Add(eventInstance, event2DElement);
+        }
     }
 
     void Create2DGlobalParameterUIElement(string globalParameter)
@@ -387,6 +519,12 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         if (cachedGlobalParametersUIElements.ContainsKey(globalParameter))
         {
             TextMeshProUGUI event2DElementText = cachedGlobalParametersUIElements[globalParameter].GetComponent<TextMeshProUGUI>();
+            if (!enableParameterVisualization)
+            {
+                event2DElementText.enabled = false;
+                return;
+            }
+            event2DElementText.enabled = true;
             RuntimeManager.StudioSystem.getParameterByName(globalParameter, out float paramVal);
             string globalParamString = globalParameter + ":" + paramVal;
             event2DElementText.text = globalParamString;
@@ -400,6 +538,13 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         {
             TextMeshProUGUI event2DElementText = cachedLocalParametersUIElements[localParameterData].GetComponent<TextMeshProUGUI>();
 
+            if (!enableParameterVisualization)
+            {
+                event2DElementText.enabled = false;
+                return;
+            }
+
+            event2DElementText.enabled = true;
             // Try to find the first active instance for this event
             for (int j = 0; j < cachedActiveInstances.Count; j++)
             {
@@ -441,12 +586,13 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     }
 #endif
 
-    void CreateCategoryUIElement(string categoryTitle)
+    GameObject CreateCategoryUIElement(string categoryTitle)
     {
         GameObject element = CreateUIElement();
         TextMeshProUGUI elementText = element.GetComponent<TextMeshProUGUI>();
         elementText.text = categoryTitle;
         elementText.fontStyle = FontStyles.UpperCase;
+        return element;
     }
 
     GameObject CreateUIElement()
@@ -637,21 +783,22 @@ public class SetteteFMODUtilityManager : MonoBehaviour
 
         animatorInfoPanel.SetActive(false);
 
-        CreateCategoryUIElement("global parameters");
+        globalParametersCategoryGO = CreateCategoryUIElement("global parameters");
         //Global Parameters
         foreach (var globalParameters in globalParametersToLog)
         {
             Create2DGlobalParameterUIElement(globalParameters);
         }
 #if UNITY_EDITOR
-        CreateCategoryUIElement("local parameters");
+        localParametersCategoryGO = CreateCategoryUIElement("local parameters");
         //Local Parameters
         foreach (var localParameterData in localParameterDatas)
         {
             CreateLocalParameterUIElement(localParameterData);
         }
 #endif
-        CreateCategoryUIElement("2d events");
+        _2DEventsCategoryGO = CreateCategoryUIElement("2d events");
+        banksCategoryGO = CreateCategoryUIElement("loaded banks");
     }
 
     void ApplyTextAnchorToRectTransform(RectTransform rt, TextAnchor anchor)
@@ -690,7 +837,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
                 GameObject prefabAsset = PrefabUtility.GetCorrespondingObjectFromOriginalSource(currentSelectedGO);
                 string prefabName = prefabAsset != null ? prefabAsset.name : "None";
 
-                sb.AppendLine($"GameObject Name: [{currentSelectedGO.name}], Prefab Name: [{prefabName}]");
+                sb.AppendLine($"GameObject Name: [{currentSelectedGO.name}],\nPrefab Name: [{prefabName}]");
 
                 for (int i = 0; i < animator.layerCount; i++)
                 {
@@ -714,7 +861,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
                         }
                     }
 
-                    sb.AppendLine($"[Layer {i}: {layerName}] State: {stateName} | Clip: {clipName}");
+                    sb.AppendLine($"[Layer {i}: {layerName}] State: {stateName}\nClip: {clipName}");
                 }
 
                 shouldDisplayAnimatorInfo = true;
@@ -797,6 +944,15 @@ public class SetteteFMODUtilityManager : MonoBehaviour
             //3D events min attenuation curve color
             bool isMin = event3DAttenuationCurveToken.EndsWith("Min");
             debugManager.UpdateSphereDrawingColor(event3DAttenuationCurveToken, isMin ? defaultAttenuationCurveMinColor : defaultAttenuationCurveMaxColor);
+        }
+
+        //Synch loaded banks color
+        if (cachedBankUIElements != null)
+        {
+            foreach (var go in cachedBankUIElements.Values)
+            {
+                go.GetComponent<TextMeshProUGUI>().color = banksColor;
+            }
         }
 
         //Synch animator info panel

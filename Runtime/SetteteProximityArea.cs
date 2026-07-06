@@ -19,9 +19,7 @@ public class SetteteProximityArea : MonoBehaviour
     [SerializeField] private Color gizmoColor = new Color(0f, 0.8f, 1f, 0.25f);
 
     [Header("Events")]
-    public UnityEvent<int> OnFirstListenerEnter;   // passes listener index
     public UnityEvent<int> OnAnyListenerEnter;   // passes listener index
-    public UnityEvent<int> OnListenerExit;    // passes listener index
     public UnityEvent OnAllListenersExit;
 
     // Runtime state
@@ -59,14 +57,7 @@ public class SetteteProximityArea : MonoBehaviour
             {
                 _listenersInside.Add(i);
 
-                if (_listenersInside.Count == 1)
-                {
-                    OnFirstListenerEnter?.Invoke(i);
-                }
-                else
-                {
-                    OnAnyListenerEnter?.Invoke(i);
-                }
+                OnAnyListenerEnter?.Invoke(i);
 
                 if (startStopEventAutomatically)
                     EnsureEventPlaying();
@@ -74,7 +65,6 @@ public class SetteteProximityArea : MonoBehaviour
             else if (!isInside && wasInside)
             {
                 _listenersInside.Remove(i);
-                OnListenerExit?.Invoke(i);
 
                 if (_listenersInside.Count == 0)
                 {
@@ -166,6 +156,7 @@ public class SetteteProximityArea : MonoBehaviour
             return max;
         }
 #endif
+        return 0f;
     }
 
     private void EnsureEventPlaying()

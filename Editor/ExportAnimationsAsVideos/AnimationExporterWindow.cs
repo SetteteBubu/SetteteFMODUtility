@@ -5,27 +5,51 @@ using System.Collections.Generic;
 
 public class AnimationExporterWindow : EditorWindow
 {
-    private GameObject _rigWithMesh;      // the mesh+rig FBX instance
-    [SerializeField] private List<GameObject> _animationSources = new(); //prefabs where animation clips are collected
+    private GameObject _rigWithMesh;
+    [SerializeField] private List<GameObject> _animationSources = new();
     private string _outputFolder = "Assets/AnimExports";
-    private string _singleClipName = "";
     private int _fps = 30;
     private Vector2Int _resolution = new Vector2Int(1280, 720);
 
-    // Camera framing
     private Vector3 _cameraOffset = new Vector3(0.5f, 1.0f, -2.5f);
-    private Vector3 _lookAtOffset = new Vector3(0f, 0.9f, 0f); // approx hip height
+    private Vector3 _lookAtOffset = new Vector3(0f, 0.9f, 0f);
 
-    private List<AnimationClip> _clips = new List<AnimationClip>();
+    private List<AnimationClip> _clips = new();
+    private List<bool> _clipToggles = new();
     private Vector2 _scrollPos;
     private Texture2D _preview;
 
     private SerializedObject _serializedWindow;
     private SerializedProperty _animSourcesProp;
 
+    private Texture2D _bannerTexture;
+
+    // Track previous camera values to detect changes
+    private Vector3 _prevCameraOffset;
+    private Vector3 _prevLookAtOffset;
+    private Vector2Int _prevResolution;
+
+    [MenuItem("Tools/Settete Animation To Video Export")]
+    public static AnimationExporterWindow Open()
+    {
+        var window = GetWindow<AnimationExporterWindow>("Settete Animation To Video Export");
+        return window;
+    }
+
+    private void OnEnable()
+    {
+        _serializedWindow = new SerializedObject(this);
+        _animSourcesProp = _serializedWindow.FindProperty("_animationSources");
+
+        _bannerTexture = EditorGUIUtility.Load("Settete/settete_banner.png") as Texture2D;
+
+        _prevCameraOffset = _cameraOffset;
+        _prevLookAtOffset = _lookAtOffset;
+        _prevResolution = _resolution;
+    }
+
     private void OnDisable()
     {
-        // Clean up the texture when the window closes
         if (_preview != null)
         {
             Object.DestroyImmediate(_preview);
@@ -33,22 +57,72 @@ public class AnimationExporterWindow : EditorWindow
         }
     }
 
-    private void OnEnable()
-    {
-        _serializedWindow = new SerializedObject(this);
-        _animSourcesProp = _serializedWindow.FindProperty("_animationSources");
-    }
+    // ── Branding banner ──────────────────────────────────────────────
 
-    [MenuItem("Tools/Animation Video Exporter")]
-    public static void Open() => GetWindow<AnimationExporterWindow>("Anim Exporter");
+    private void DrawBrandingBanner()
+    {
+        const float bannerHeight = 80f;
+        const float buttonsColumnWidth = 110f; // reserved space, buttons must never disappear
+        const float spacing = 10f;
+
+        using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox, GUILayout.Height(bannerHeight)))
+        {
+            if (_bannerTexture != null)
+            {
+                float aspect = (float)_bannerTexture.width / _bannerTexture.height;
+
+                float availableForImage = EditorGUIUtility.currentViewWidth
+                    - buttonsColumnWidth - spacing - 40f;
+
+                float imageHeight = bannerHeight;
+                float imageWidth = imageHeight * aspect;
+
+                if (imageWidth > availableForImage)
+                {
+                    imageWidth = Mathf.Max(20f, availableForImage);
+                    imageHeight = imageWidth / aspect;
+                }
+
+                using (new EditorGUILayout.VerticalScope(GUILayout.Height(bannerHeight)))
+                {
+                    GUILayout.FlexibleSpace();
+                    GUILayout.Label(_bannerTexture, GUILayout.Width(imageWidth), GUILayout.Height(imageHeight));
+                    GUILayout.FlexibleSpace();
+                }
+            }
+
+            GUILayout.FlexibleSpace();
+
+            using (new EditorGUILayout.VerticalScope(GUILayout.Height(bannerHeight), GUILayout.Width(buttonsColumnWidth)))
+            {
+                GUILayout.FlexibleSpace();
+
+                if (GUILayout.Button("Open Website"))
+                    Application.OpenURL("https://settete.com/");
+
+                GUILayout.Space(4);
+
+                if (GUILayout.Button("Contact Us"))
+                    Application.OpenURL("https://settete.com/contact");
+
+                GUILayout.FlexibleSpace();
+            }
+        }
+    }
 
     private void OnGUI()
     {
-        EditorGUILayout.LabelField("Animation Video Exporter", EditorStyles.boldLabel);
-        EditorGUILayout.Space();
+        DrawBrandingBanner();
+        EditorGUILayout.Space(4);
 
+        // ── Assets ────────────────────────────────────────────────
+        EditorGUILayout.Space(4);
+
+        var prevRig = _rigWithMesh;
         _rigWithMesh = (GameObject)EditorGUILayout.ObjectField(
             "Mesh + Rig", _rigWithMesh, typeof(GameObject), true);
+        if (_rigWithMesh != prevRig) TryRefreshPreview();
+
         _serializedWindow.Update();
         EditorGUILayout.PropertyField(_animSourcesProp, new GUIContent("Animation FBXes"), true);
         _serializedWindow.ApplyModifiedProperties();
@@ -56,76 +130,131 @@ public class AnimationExporterWindow : EditorWindow
         if (GUILayout.Button("Refresh Clip List") && _animationSources != null)
             RefreshClips();
 
-        _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, GUILayout.Height(150));
-
-        foreach (var clip in _clips)
+        if (_clips.Count > 0)
         {
-            EditorGUILayout.BeginHorizontal();
-
-            EditorGUILayout.LabelField("• " + clip.name);
-
-            if (GUILayout.Button("Copy", GUILayout.Width(50)))
+            using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUIUtility.systemCopyBuffer = clip.name;
+                if (GUILayout.Button("Select All"))
+                    SetAllClipToggles(true);
+                if (GUILayout.Button("Select None"))
+                    SetAllClipToggles(false);
             }
-
-            EditorGUILayout.EndHorizontal();
         }
 
-        EditorGUILayout.EndScrollView();
+        if (_clips.Count > 0)
+        {
+            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, GUILayout.ExpandHeight(true));
 
-        EditorGUILayout.Space();
+            for (int i = 0; i < _clips.Count; i++)
+            {
+                EditorGUILayout.BeginHorizontal();
+                _clipToggles[i] = EditorGUILayout.Toggle(_clipToggles[i], GUILayout.Width(20));
+                using (new EditorGUI.DisabledScope(!_clipToggles[i]))
+                {
+                    EditorGUILayout.LabelField("• " + _clips[i].name);
+                    //if (GUILayout.Button("Copy", GUILayout.Width(50)))
+                        //EditorGUIUtility.systemCopyBuffer = _clips[i].name;
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        // ── Everything below — pinned to the bottom of the window ──
+        DrawBelowScrollView();
+    }
+
+    private void DrawBelowScrollView()
+    {
+        EditorGUILayout.Space(4);
         _fps = EditorGUILayout.IntField("FPS", _fps);
         _resolution = EditorGUILayout.Vector2IntField("Resolution", _resolution);
         _cameraOffset = EditorGUILayout.Vector3Field("Camera Offset", _cameraOffset);
         _lookAtOffset = EditorGUILayout.Vector3Field("LookAt Offset", _lookAtOffset);
-        if (GUILayout.Button("Update Preview") && _rigWithMesh != null)
+
+        if (_cameraOffset != _prevCameraOffset ||
+            _lookAtOffset != _prevLookAtOffset ||
+            _resolution != _prevResolution)
         {
-            UpdatePreview();
+            _prevCameraOffset = _cameraOffset;
+            _prevLookAtOffset = _lookAtOffset;
+            _prevResolution = _resolution;
+            TryRefreshPreview();
         }
 
         if (_preview != null)
         {
-            // Scale the preview to fit the window width while keeping aspect ratio
             float aspect = (float)_preview.width / _preview.height;
             float drawWidth = EditorGUIUtility.currentViewWidth - 20f;
             float drawHeight = drawWidth / aspect;
-
             var rect = GUILayoutUtility.GetRect(drawWidth, drawHeight);
             GUI.DrawTexture(rect, _preview, ScaleMode.ScaleToFit);
         }
 
-        _outputFolder = EditorGUILayout.TextField("Output Folder", _outputFolder);
+        EditorGUILayout.Space(4);
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            _outputFolder = EditorGUILayout.TextField("Output Folder", _outputFolder);
+            if (GUILayout.Button("Browse…", GUILayout.Width(70)))
+            {
+                string chosen = EditorUtility.OpenFolderPanel(
+                    "Select Export Folder", _outputFolder, "");
+                if (!string.IsNullOrEmpty(chosen))
+                    _outputFolder = chosen;
+            }
+        }
 
-        EditorGUILayout.Space();
-        GUI.enabled = _rigWithMesh != null && _clips.Count > 0;
-        if (GUILayout.Button("Export All Clips"))
-            ExportClips(_clips);
-        _singleClipName = EditorGUILayout.TextField("Single Clip Export", _singleClipName);
-        if (GUILayout.Button("Export Single Clip"))
-            ExportClips(new() { _clips.Find(x => x.name == _singleClipName) });
-        GUI.enabled = true;
+        EditorGUILayout.Space(4);
+
+        int enabledCount = 0;
+        foreach (var t in _clipToggles) if (t) enabledCount++;
+
+        using (new EditorGUI.DisabledScope(_rigWithMesh == null || enabledCount == 0))
+        {
+            if (GUILayout.Button($"Export {enabledCount} Selected Clip(s)"))
+                ExportSelectedClips();
+        }
     }
 
-    void UpdatePreview()
-    {
-        // Instantiate the mesh rig into a temp scene-like environment
-        var instance = PrefabUtility.IsPartOfPrefabAsset(_rigWithMesh)
-            ? (GameObject)PrefabUtility.InstantiatePrefab(_rigWithMesh)
-            : _rigWithMesh; // already a scene instance
+    // ── Helpers ───────────────────────────────────────────────────
 
-        bool weCreatedIt = instance != _rigWithMesh;
+    private void TryRefreshPreview()
+    {
+        if (_rigWithMesh == null) return;
+
+        bool weCreatedIt = false;
+        GameObject instance;
+
+        if (PrefabUtility.IsPartOfPrefabAsset(_rigWithMesh))
+        {
+            instance = (GameObject)PrefabUtility.InstantiatePrefab(_rigWithMesh);
+            weCreatedIt = true;
+        }
+        else
+        {
+            instance = _rigWithMesh;
+        }
 
         if (_preview != null) Object.DestroyImmediate(_preview);
         _preview = AnimationExportJob.TakeScreenshot(
-            _rigWithMesh, _resolution, _cameraOffset, _lookAtOffset);
+            instance, _resolution, _cameraOffset, _lookAtOffset);
 
         if (weCreatedIt) DestroyImmediate(instance);
+        Repaint();
+    }
+
+    private void SetAllClipToggles(bool value)
+    {
+        for (int i = 0; i < _clipToggles.Count; i++)
+            _clipToggles[i] = value;
     }
 
     private void RefreshClips()
     {
         _clips.Clear();
+        _clipToggles.Clear();
+
         foreach (var source in _animationSources)
         {
             if (source == null) continue;
@@ -133,37 +262,49 @@ public class AnimationExporterWindow : EditorWindow
             foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(path))
             {
                 if (asset is AnimationClip c && !c.name.StartsWith("__preview__"))
+                {
                     _clips.Add(c);
+                    _clipToggles.Add(true); // enabled by default
+                }
             }
         }
     }
 
-    private void ExportClips(List<AnimationClip> clips)
+    private void ExportSelectedClips()
     {
+        var toExport = new List<AnimationClip>();
+        for (int i = 0; i < _clips.Count; i++)
+            if (_clipToggles[i]) toExport.Add(_clips[i]);
+
+        if (toExport.Count == 0) return;
+
         if (!Directory.Exists(_outputFolder))
             Directory.CreateDirectory(_outputFolder);
 
-        // Instantiate the mesh rig into a temp scene-like environment
-        var instance = PrefabUtility.IsPartOfPrefabAsset(_rigWithMesh)
-            ? (GameObject)PrefabUtility.InstantiatePrefab(_rigWithMesh)
-            : _rigWithMesh; // already a scene instance
+        bool weCreatedIt = false;
+        GameObject instance;
 
-        bool weCreatedIt = instance != _rigWithMesh;
+        if (PrefabUtility.IsPartOfPrefabAsset(_rigWithMesh))
+        {
+            instance = (GameObject)PrefabUtility.InstantiatePrefab(_rigWithMesh);
+            weCreatedIt = true;
+        }
+        else
+        {
+            instance = _rigWithMesh;
+        }
 
         try
         {
-            foreach (var clip in clips)
+            foreach (var clip in toExport)
             {
-                if (clip != null)
-                {
-                    string sanitizedClipName = clip.name.Replace("|", "_");
-                    string clipFolder = Path.Combine(_outputFolder, sanitizedClipName);
-                    Directory.CreateDirectory(clipFolder);
-                    AnimationExportJob.Run(instance, clip, clipFolder, _fps,
-                        _resolution, _cameraOffset, _lookAtOffset);
-                    FfmpegUtils.StitchToMp4(clipFolder,
-                        Path.Combine(_outputFolder, sanitizedClipName + ".mp4"), _fps);
-                }
+                string sanitized = clip.name.Replace("|", "_");
+                string clipFolder = Path.Combine(_outputFolder, sanitized);
+                Directory.CreateDirectory(clipFolder);
+                AnimationExportJob.Run(instance, clip, clipFolder, _fps,
+                    _resolution, _cameraOffset, _lookAtOffset);
+                FfmpegUtils.StitchToMp4(clipFolder,
+                    Path.Combine(_outputFolder, sanitized + ".mp4"), _fps);
             }
         }
         finally
@@ -173,6 +314,6 @@ public class AnimationExporterWindow : EditorWindow
 
         AssetDatabase.Refresh();
         EditorUtility.DisplayDialog("Done",
-            $"Exported {clips.Count} clips to {_outputFolder}", "OK");
+            $"Exported {toExport.Count} clip(s) to {_outputFolder}", "OK");
     }
 }
