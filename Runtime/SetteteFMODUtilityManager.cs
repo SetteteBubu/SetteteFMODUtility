@@ -72,10 +72,9 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     [Tooltip("Referenced just to grab Unity's built-in sprite, but feel free to customize")]
     public Sprite defaultSelectedAnimatorCurrentStateImage;
 
-    [Header("Preview Animation Events")]
-    [ReadOnly]
-    //Function to call on SetteteAnimationEventReceiver to trigger audio. Will also be used to preview events in editor
-    public readonly string AnimationEventsFunctionName = AnimationEventsFunctionNameConstant;
+    [Header("Trigger Animation Events")]
+    [Tooltip("Function to call on SetteteAnimationEventReceiver to trigger audio. Will also be used to preview events in editor")]
+    public string AnimationEventsFunctionName = AnimationEventsFunctionNameConstant;
 
     [Tooltip("Turn on/off the whole 2D events visualization")]
     public bool enable2DEventsVisualization = false;

@@ -1,6 +1,6 @@
 {
   "name": "com.settete.settete-fmod-utility",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "Settete FMOD Utility",
   "description": "FMOD audio tooling and animation event preview for Unity.",
   "unity": "6000.3",

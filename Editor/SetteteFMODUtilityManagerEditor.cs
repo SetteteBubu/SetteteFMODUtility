@@ -12,6 +12,9 @@ public class SetteteFMODUtilityManagerEditor : Editor
 
     // ── Serialized properties ──────────────────────────────────────
 
+    // Animation Events function
+    private SerializedProperty _animationEventsFunctionName;
+
     // 3D Events
     private SerializedProperty _visualize3DEvents;
     private SerializedProperty _visualize3DEventsTexts;
@@ -92,6 +95,9 @@ public class SetteteFMODUtilityManagerEditor : Editor
     {
         _bannerTexture = EditorGUIUtility.Load("Settete/settete_banner.png") as Texture2D;
 
+        // Animation events functions name
+        _animationEventsFunctionName = serializedObject.FindProperty("AnimationEventsFunctionName");
+
         // 3D Events
         _visualize3DEvents = serializedObject.FindProperty("visualize3DEvents");
         _visualize3DEventsTexts = serializedObject.FindProperty("visualize3DEventsTexts");
@@ -148,7 +154,11 @@ public class SetteteFMODUtilityManagerEditor : Editor
 
         DrawBrandingBanner();
         EditorGUILayout.Space(6);
-
+        using (new EditorGUI.DisabledScope(true))
+        {
+            EditorGUILayout.PropertyField(_animationEventsFunctionName);
+        }
+        EditorGUILayout.Space(6);
         DrawSection3DEvents();
         EditorGUILayout.Space(6);
         DrawSection2DEvents();
