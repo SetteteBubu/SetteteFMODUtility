@@ -14,7 +14,13 @@ public static class FMODLoopRegistry
         if (_instances.ContainsKey(key)) return; // already playing
 
         EventInstance instance = RuntimeManager.CreateInstance(eventPath);
+
+#if UNITY_2022_3
+        RuntimeManager.AttachInstanceToGameObject(instance, transform);
+#else
         RuntimeManager.AttachInstanceToGameObject(instance, owner);
+#endif
+
         instance.start();
         _instances[key] = instance;
     }

@@ -7,7 +7,9 @@ public static class FMODEditorPreview
     public static void PlayOneShot(string eventPath)
     {
         EditorEventRef editorEvent = EventManager.EventFromPath(eventPath);
-        EditorUtils.LoadPreviewBanks();
+
+        SetteteFMODUtilityManager.LoadFMODPreviewBanks();
+
         var instance = FMODUnity.EditorUtils.PreviewEvent(editorEvent, null);
         instance.release(); // release immediately = one-shot behavior, FMOD cleans it up when done
     }
@@ -15,7 +17,9 @@ public static class FMODEditorPreview
     public static EventInstance StartLoop(string eventPath)
     {
         EditorEventRef editorEvent = EventManager.EventFromPath(eventPath);
-        EditorUtils.LoadPreviewBanks();
+
+        SetteteFMODUtilityManager.LoadFMODPreviewBanks();
+
         var instance = FMODUnity.EditorUtils.PreviewEvent(editorEvent, null);
 
         return instance;

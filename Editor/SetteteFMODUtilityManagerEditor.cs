@@ -91,9 +91,35 @@ public class SetteteFMODUtilityManagerEditor : Editor
         return tex;
     }
 
+    private static Texture2D LoadTextureRelativeToScript(string relativePath)
+    {
+        // Try relative to this script first
+        string[] scriptGuids = AssetDatabase.FindAssets("SetteteFMODUtilityManagerEditor t:MonoScript");
+        if (scriptGuids.Length > 0)
+        {
+            string scriptPath = AssetDatabase.GUIDToAssetPath(scriptGuids[0]);
+            string folder = System.IO.Path.GetDirectoryName(scriptPath);
+            string texturePath = System.IO.Path.Combine(folder, relativePath).Replace('\\', '/');
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath);
+            if (tex != null) return tex;
+        }
+
+        // Fallback: search for the texture by name anywhere in the project
+        string fileName = System.IO.Path.GetFileNameWithoutExtension(relativePath);
+        string[] texGuids = AssetDatabase.FindAssets(fileName + " t:Texture2D");
+        foreach (var guid in texGuids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            if (path.Contains("settete_banner"))
+                return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        return null;
+    }
+
     private void OnEnable()
     {
-        _bannerTexture = EditorGUIUtility.Load("Settete/settete_banner.png") as Texture2D;
+        _bannerTexture = LoadTextureRelativeToScript("Resources/settete_banner.png");
 
         // Animation events functions name
         _animationEventsFunctionName = serializedObject.FindProperty("AnimationEventsFunctionName");

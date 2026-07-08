@@ -21,7 +21,6 @@ public class AnimationExporterWindow : EditorWindow
 
     private SerializedObject _serializedWindow;
     private SerializedProperty _animSourcesProp;
-
     private Texture2D _bannerTexture;
 
     // Track previous camera values to detect changes
@@ -36,12 +35,38 @@ public class AnimationExporterWindow : EditorWindow
         return window;
     }
 
+    private static Texture2D LoadTextureRelativeToEditor(string relativePath)
+    {
+        // Try relative to this script first
+        string[] scriptGuids = AssetDatabase.FindAssets("AnimationExporterWindow t:MonoScript");
+        if (scriptGuids.Length > 0)
+        {
+            string scriptPath = AssetDatabase.GUIDToAssetPath(scriptGuids[0]);
+            string folder = System.IO.Path.GetDirectoryName(scriptPath);
+            string texturePath = System.IO.Path.Combine(folder, relativePath).Replace('\\', '/');
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath);
+            if (tex != null) return tex;
+        }
+
+        // Fallback: search for the texture by name anywhere in the project
+        string fileName = System.IO.Path.GetFileNameWithoutExtension(relativePath);
+        string[] texGuids = AssetDatabase.FindAssets(fileName + " t:Texture2D");
+        foreach (var guid in texGuids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            if (path.Contains("settete_banner"))
+                return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        return null;
+    }
+
     private void OnEnable()
     {
         _serializedWindow = new SerializedObject(this);
         _animSourcesProp = _serializedWindow.FindProperty("_animationSources");
 
-        _bannerTexture = EditorGUIUtility.Load("Settete/settete_banner.png") as Texture2D;
+        _bannerTexture = LoadTextureRelativeToEditor("Resources/settete_banner.png");
 
         _prevCameraOffset = _cameraOffset;
         _prevLookAtOffset = _lookAtOffset;
@@ -132,18 +157,11 @@ public class AnimationExporterWindow : EditorWindow
 
         if (_clips.Count > 0)
         {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("Select All"))
-                    SetAllClipToggles(true);
-                if (GUILayout.Button("Select None"))
-                    SetAllClipToggles(false);
-            }
-        }
+            float itemHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+            float maxScrollHeight = itemHeight * 8f;
+            float scrollHeight = Mathf.Min(_clips.Count * itemHeight, maxScrollHeight);
 
-        if (_clips.Count > 0)
-        {
-            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, GUILayout.ExpandHeight(true));
+            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, GUILayout.Height(scrollHeight));
 
             for (int i = 0; i < _clips.Count; i++)
             {
@@ -161,7 +179,7 @@ public class AnimationExporterWindow : EditorWindow
             EditorGUILayout.EndScrollView();
         }
 
-        // ── Everything below — pinned to the bottom of the window ──
+        // ── Everything below — drawn for real now ──────────────────
         DrawBelowScrollView();
     }
 
@@ -242,12 +260,6 @@ public class AnimationExporterWindow : EditorWindow
 
         if (weCreatedIt) DestroyImmediate(instance);
         Repaint();
-    }
-
-    private void SetAllClipToggles(bool value)
-    {
-        for (int i = 0; i < _clipToggles.Count; i++)
-            _clipToggles[i] = value;
     }
 
     private void RefreshClips()

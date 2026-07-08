@@ -604,7 +604,13 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         event2DElementText.enableAutoSizing = true;
         event2DElementText.fontSizeMax = 72f;
         event2DElementText.fontSizeMin = 5f;
+
+#if UNITY_6000_0_OR_NEWER
         event2DElementText.textWrappingMode = TextWrappingModes.NoWrap;
+#else
+        event2DElementText.enableWordWrapping = false;
+#endif
+
         event2DElementText.color = events2DColor;
 
         return event2DElement;
@@ -771,7 +777,13 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         animatorInfoText.enableAutoSizing = true;
         animatorInfoText.fontSizeMax = 72f;
         animatorInfoText.fontSizeMin = 5f;
+
+#if UNITY_6000_0_OR_NEWER
         animatorInfoText.textWrappingMode = TextWrappingModes.NoWrap;
+#else
+        animatorInfoText.enableWordWrapping = false;
+#endif
+
         animatorInfoText.color = defaultSelectedAnimatorCurrentStateColor;
         animatorInfoText.GetComponent<RectTransform>().anchorMin = Vector2.zero;
         animatorInfoText.GetComponent<RectTransform>().anchorMax = Vector2.one;
@@ -822,6 +834,16 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     }
 
 #if UNITY_EDITOR
+    public static void LoadFMODPreviewBanks()
+    {
+        var method = typeof(FMODUnity.EditorUtils).GetMethod(
+            "LoadPreviewBanks",
+            System.Reflection.BindingFlags.Public |
+            System.Reflection.BindingFlags.NonPublic |
+            System.Reflection.BindingFlags.Static);
+        method?.Invoke(null, null);
+    }
+
     void HandleAnimatorInfoPanel()
     {
         GameObject currentSelectedGO = Selection.activeGameObject;

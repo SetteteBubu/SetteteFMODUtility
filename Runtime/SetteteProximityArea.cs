@@ -146,7 +146,8 @@ public class SetteteProximityArea : MonoBehaviour
 #if UNITY_EDITOR
         else
         {
-            EditorUtils.LoadPreviewBanks();
+            SetteteFMODUtilityManager.LoadFMODPreviewBanks();
+
             EditorUtils.System.getEvent(fmodEvent.Path, out EventDescription desc);
 
             desc.is3D(out bool is3D);
@@ -156,7 +157,6 @@ public class SetteteProximityArea : MonoBehaviour
             return max;
         }
 #endif
-        return 0f;
     }
 
     private void EnsureEventPlaying()
@@ -164,7 +164,13 @@ public class SetteteProximityArea : MonoBehaviour
         if (_eventPlaying) return;
 
         _eventInstance = RuntimeManager.CreateInstance(fmodEvent);
+
+#if UNITY_2022_3
+        RuntimeManager.AttachInstanceToGameObject(_eventInstance, transform);
+#else
         RuntimeManager.AttachInstanceToGameObject(_eventInstance, gameObject);
+#endif
+
         _eventInstance.start();
         _eventPlaying = true;
     }
