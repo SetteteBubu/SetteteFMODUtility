@@ -148,7 +148,7 @@ public class SetteteProximityArea : MonoBehaviour
         {
             SetteteFMODUtilityManager.LoadFMODPreviewBanks();
 
-#if UNITY_6000_0_OR_NEWER
+#if !FMOD_LEGACY_API
             EditorUtils.System.getEvent(fmodEvent.Path, out EventDescription desc);
 #else
             FMODUnity.RuntimeManager.StudioSystem.getEvent(fmodEvent.Path, out EventDescription desc);
@@ -169,7 +169,7 @@ public class SetteteProximityArea : MonoBehaviour
 
         _eventInstance = RuntimeManager.CreateInstance(fmodEvent);
 
-#if UNITY_2022_3
+#if FMOD_LEGACY_API
         RuntimeManager.AttachInstanceToGameObject(_eventInstance, transform);
 #else
         RuntimeManager.AttachInstanceToGameObject(_eventInstance, gameObject);

@@ -15,10 +15,10 @@ public static class FMODLoopRegistry
 
         EventInstance instance = RuntimeManager.CreateInstance(eventPath);
 
-#if UNITY_2022_3
-        RuntimeManager.AttachInstanceToGameObject(instance, owner.transform);
+#if FMOD_LEGACY_API
+    RuntimeManager.AttachInstanceToGameObject(instance, owner.transform);
 #else
-        RuntimeManager.AttachInstanceToGameObject(instance, owner);
+    RuntimeManager.AttachInstanceToGameObject(instance, owner);
 #endif
 
         instance.start();

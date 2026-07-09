@@ -858,12 +858,14 @@ public class SetteteFMODUtilityManager : MonoBehaviour
 #if UNITY_EDITOR
     public static void LoadFMODPreviewBanks()
     {
+#if !FMOD_LEGACY_API
         var method = typeof(FMODUnity.EditorUtils).GetMethod(
             "LoadPreviewBanks",
             System.Reflection.BindingFlags.Public |
             System.Reflection.BindingFlags.NonPublic |
             System.Reflection.BindingFlags.Static);
         method?.Invoke(null, null);
+#endif
     }
 
     void HandleAnimatorInfoPanel()
