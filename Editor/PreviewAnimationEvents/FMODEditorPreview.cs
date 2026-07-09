@@ -1,6 +1,10 @@
 #if UNITY_EDITOR
-using FMOD.Studio;
 using FMODUnity;
+
+#if FMOD_LEGACY_API
+using FMOD.Studio;
+using UnityEngine;
+#endif
 
 public static class FMODEditorPreview
 {
