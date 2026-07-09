@@ -16,7 +16,7 @@ public static class FMODLoopRegistry
         EventInstance instance = RuntimeManager.CreateInstance(eventPath);
 
 #if UNITY_2022_3
-        RuntimeManager.AttachInstanceToGameObject(instance, transform);
+        RuntimeManager.AttachInstanceToGameObject(instance, owner.transform);
 #else
         RuntimeManager.AttachInstanceToGameObject(instance, owner);
 #endif
@@ -47,38 +47,38 @@ public static class FMODLoopRegistry
         }
     }
 
-/*
-#if UNITY_EDITOR
-public static void StopAll()
-{
-    foreach (var instance in _editorInstances.Values)
+    /*
+    #if UNITY_EDITOR
+    public static void StopAll()
     {
-        EditorUtils.PreviewStop(instance);
+        foreach (var instance in _editorInstances.Values)
+        {
+            EditorUtils.PreviewStop(instance);
+        }
+        _editorInstances.Clear();
     }
-    _editorInstances.Clear();
-}
 
 
-private static readonly Dictionary<(int, string), FMOD.Studio.EventInstance> _editorInstances = new();
+    private static readonly Dictionary<(int, string), FMOD.Studio.EventInstance> _editorInstances = new();
 
-public static void RegisterEditorInstance(string eventPath, GameObject owner, FMOD.Studio.EventInstance instance)
-{
-    var key = (owner.GetInstanceID(), eventPath);
-    if (_editorInstances.TryGetValue(key, out var existing))
+    public static void RegisterEditorInstance(string eventPath, GameObject owner, FMOD.Studio.EventInstance instance)
     {
-        EditorUtils.PreviewStop(existing);
+        var key = (owner.GetInstanceID(), eventPath);
+        if (_editorInstances.TryGetValue(key, out var existing))
+        {
+            EditorUtils.PreviewStop(existing);
+        }
+        _editorInstances[key] = instance;
     }
-    _editorInstances[key] = instance;
-}
 
-public static void StopEditorInstance(string eventPath, GameObject owner)
-{
-    var key = (owner.GetInstanceID(), eventPath);
-    if (!_editorInstances.TryGetValue(key, out var instance)) return;
+    public static void StopEditorInstance(string eventPath, GameObject owner)
+    {
+        var key = (owner.GetInstanceID(), eventPath);
+        if (!_editorInstances.TryGetValue(key, out var instance)) return;
 
-    FMODEditorPreview.StopLoop(instance);
-    _editorInstances.Remove(key);
-}
-#endif
-*/
+        FMODEditorPreview.StopLoop(instance);
+        _editorInstances.Remove(key);
+    }
+    #endif
+    */
 }

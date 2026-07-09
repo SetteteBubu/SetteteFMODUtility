@@ -148,7 +148,11 @@ public class SetteteProximityArea : MonoBehaviour
         {
             SetteteFMODUtilityManager.LoadFMODPreviewBanks();
 
+#if UNITY_6000_0_OR_NEWER
             EditorUtils.System.getEvent(fmodEvent.Path, out EventDescription desc);
+#else
+            FMODUnity.RuntimeManager.StudioSystem.getEvent(fmodEvent.Path, out EventDescription desc);
+#endif
 
             desc.is3D(out bool is3D);
             if (!is3D) return 0f;

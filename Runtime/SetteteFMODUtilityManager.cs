@@ -126,6 +126,25 @@ public class SetteteFMODUtilityManager : MonoBehaviour
 
     private Dictionary<string, string> cachedLocalParamValues;
 
+    //Stable events IDs
+    private static int _nextInstanceId = 0;
+    private static Dictionary<IntPtr, int> _handleToId = new();
+
+    private static int GetStableId(EventInstance instance)
+    {
+        if (!_handleToId.TryGetValue(instance.handle, out int id))
+        {
+            id = _nextInstanceId++;
+            _handleToId[instance.handle] = id;
+        }
+        return id;
+    }
+
+    private static void ReleaseStableId(EventInstance instance)
+    {
+        _handleToId.Remove(instance.handle);
+    }
+
     private void Awake()
     {
         debugManager = GetComponent<SetteteFMODUtilityDebugManager>();
@@ -280,16 +299,16 @@ public class SetteteFMODUtilityManager : MonoBehaviour
                 //Handle global filter
                 if (!string.IsNullOrEmpty(events3DPathRootFilter) && !eventPath.Contains(events3DPathRootFilter))
                 {
-                    debugManager.StopDrawing(inst.handle.ToString());
+                    debugManager.StopDrawing(GetStableId(inst).ToString());
                     cachedActiveInstances.RemoveAt(i);
                 }
                 else
                 {
-                    debugManager.UpdateDrawingPosition(inst.handle.ToString(), instPos);
-                    if (active3DEventsAttenuationCurveTokens.Contains(inst.handle.ToString() + "attenMin"))
+                    debugManager.UpdateDrawingPosition(GetStableId(inst).ToString(), instPos);
+                    if (active3DEventsAttenuationCurveTokens.Contains(GetStableId(inst).ToString() + "attenMin"))
                     {
-                        debugManager.UpdateDrawingPosition(inst.handle.ToString() + "attenMin", instPos);
-                        debugManager.UpdateDrawingPosition(inst.handle.ToString() + "attenMax", instPos);
+                        debugManager.UpdateDrawingPosition(GetStableId(inst).ToString() + "attenMin", instPos);
+                        debugManager.UpdateDrawingPosition(GetStableId(inst).ToString() + "attenMax", instPos);
                     }
                 }
             }
@@ -381,7 +400,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
                     Delete2DEventUIElement(inst);
                 }
 
-                debugManager.InvalidateToken(inst.handle.ToString());
+                debugManager.InvalidateToken(GetStableId(inst).ToString());
             }
         }
 
@@ -397,7 +416,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
 
     void Start3DEventAttenuationCurveVisualization(EventInstance eventInstance)
     {
-        if (active3DEventsAttenuationCurveTokens.Contains(eventInstance.handle.ToString() + "attenMin")) return;
+        if (active3DEventsAttenuationCurveTokens.Contains(GetStableId(eventInstance).ToString() + "attenMin")) return;
         if (!visualize3DEvents) return;
 
         eventInstance.getDescription(out EventDescription eventDescription);
@@ -408,20 +427,20 @@ public class SetteteFMODUtilityManager : MonoBehaviour
             attributes.position.z
         );
         eventDescription.getMinMaxDistance(out float min, out float max);
-        debugManager.DrawSphere(instPos, min, defaultAttenuationCurveMinColor, float.MaxValue, eventInstance.handle.ToString() + "attenMin");
-        debugManager.DrawSphere(instPos, max, defaultAttenuationCurveMaxColor, float.MaxValue, eventInstance.handle.ToString() + "attenMax");
-        active3DEventsAttenuationCurveTokens.Add(eventInstance.handle.ToString() + "attenMin");
-        active3DEventsAttenuationCurveTokens.Add(eventInstance.handle.ToString() + "attenMax");
+        debugManager.DrawSphere(instPos, min, defaultAttenuationCurveMinColor, float.MaxValue, GetStableId(eventInstance).ToString() + "attenMin");
+        debugManager.DrawSphere(instPos, max, defaultAttenuationCurveMaxColor, float.MaxValue, GetStableId(eventInstance).ToString() + "attenMax");
+        active3DEventsAttenuationCurveTokens.Add(GetStableId(eventInstance).ToString() + "attenMin");
+        active3DEventsAttenuationCurveTokens.Add(GetStableId(eventInstance).ToString() + "attenMax");
     }
 
     void Stop3DEventAttenuationCurveVisualization(EventInstance eventInstance)
     {
-        if (active3DEventsAttenuationCurveTokens.Contains(eventInstance.handle.ToString() + "attenMin"))
+        if (active3DEventsAttenuationCurveTokens.Contains(GetStableId(eventInstance).ToString() + "attenMin"))
         {
-            debugManager.StopDrawing(eventInstance.handle.ToString() + "attenMin");
-            debugManager.StopDrawing(eventInstance.handle.ToString() + "attenMax");
-            active3DEventsAttenuationCurveTokens.Remove(eventInstance.handle.ToString() + "attenMin");
-            active3DEventsAttenuationCurveTokens.Remove(eventInstance.handle.ToString() + "attenMax");
+            debugManager.StopDrawing(GetStableId(eventInstance).ToString() + "attenMin");
+            debugManager.StopDrawing(GetStableId(eventInstance).ToString() + "attenMax");
+            active3DEventsAttenuationCurveTokens.Remove(GetStableId(eventInstance).ToString() + "attenMin");
+            active3DEventsAttenuationCurveTokens.Remove(GetStableId(eventInstance).ToString() + "attenMax");
         }
     }
 
@@ -432,6 +451,8 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         eventInstance.getDescription(out EventDescription eventDescription);
 
         eventDescription.getPath(out string path);
+
+        if (string.IsNullOrEmpty(path)) return;
 
         //Handle filter
         if (!string.IsNullOrEmpty(events3DPathRootFilter) && !path.Contains(events3DPathRootFilter)) return;
@@ -444,7 +465,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         );
 
         if (visualize3DEventsTexts)
-            debugManager.DrawText("• " + System.IO.Path.GetFileName(path), instPos, events3DColor, events3DFontSize, float.MaxValue, TextAnchor.MiddleLeft, eventInstance.handle.ToString());
+            debugManager.DrawText("• " + System.IO.Path.GetFileName(path), instPos, events3DColor, events3DFontSize, float.MaxValue, TextAnchor.MiddleLeft, GetStableId(eventInstance).ToString());
 
         //Handle attenuation curve visualization
         if (visualize3DEventsAttenuationCurve && (string.IsNullOrEmpty(events3DAttenuationCurvePathRootFilter) || path.Contains(events3DAttenuationCurvePathRootFilter)))
@@ -452,9 +473,9 @@ public class SetteteFMODUtilityManager : MonoBehaviour
             Start3DEventAttenuationCurveVisualization(eventInstance);
         }
 
-        if (!active3DEventsTokens.Contains(eventInstance.handle.ToString()))
+        if (!active3DEventsTokens.Contains(GetStableId(eventInstance).ToString()))
         {
-            active3DEventsTokens.Add(eventInstance.handle.ToString());
+            active3DEventsTokens.Add(GetStableId(eventInstance).ToString());
         }
     }
 
@@ -462,27 +483,27 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     {
         if (disableText)
         {
-            debugManager.StopDrawing(eventInstance.handle.ToString());
-            active3DEventsTokens.Remove(eventInstance.handle.ToString());
+            string id = GetStableId(eventInstance).ToString();
+            debugManager.StopDrawing(id);
+            active3DEventsTokens.Remove(id);
+            ReleaseStableId(eventInstance);
         }
+
         if (disableAttenCurve)
-        {
             Stop3DEventAttenuationCurveVisualization(eventInstance);
-        }
     }
 
     void Create2DEventUIElement(EventInstance eventInstance)
     {
         if (!cached2DEventsUIElements.ContainsKey(eventInstance))
         {
-            GameObject event2DElement = CreateUIElement();
-
             eventInstance.getDescription(out EventDescription eventDescription);
             eventDescription.getPath(out string eventPath);
+            if (string.IsNullOrEmpty(eventPath)) return;
 
+            GameObject event2DElement = CreateUIElement();
             TextMeshProUGUI event2DElementText = event2DElement.GetComponent<TextMeshProUGUI>();
             event2DElementText.text = System.IO.Path.GetFileName(eventPath);
-
             cached2DEventsUIElements.Add(eventInstance, event2DElement);
         }
     }
@@ -622,6 +643,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         {
             Destroy(cached2DEventsUIElements[eventInstance]);
             cached2DEventsUIElements.Remove(eventInstance);
+            ReleaseStableId(eventInstance);
         }
     }
 

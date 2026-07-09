@@ -20,7 +20,11 @@ public static class FMODAnimationEventEditorDriver
         if (Application.isPlaying) return;
 
         // Pump the FMOD editor system every frame so audio actually processes
+#if UNITY_6000_0_OR_NEWER
         FMODUnity.EditorUtils.System.update();
+#else
+        FMODUnity.RuntimeManager.CoreSystem.update();
+#endif
 
         if (!AnimationMode.InAnimationMode())
         {
@@ -105,7 +109,7 @@ public static class FMODAnimationEventEditorDriver
     {
         // ExitingEditMode fires before the domain reload that enters Play Mode
         //if (state == PlayModeStateChange.ExitingEditMode)
-            //FMODLoopRegistry.StopAll();
+        //FMODLoopRegistry.StopAll();
     }
 }
 #endif
