@@ -6,7 +6,7 @@ public static class FMODEditorPreview
 {
     public static void PlayOneShot(string eventPath)
     {
-#if UNITY_6000_0_OR_NEWER
+#if !FMOD_LEGACY_API
         EditorEventRef editorEvent = EventManager.EventFromPath(eventPath);
         SetteteFMODUtilityManager.LoadFMODPreviewBanks();
         var instance = FMODUnity.EditorUtils.PreviewEvent(editorEvent, null);

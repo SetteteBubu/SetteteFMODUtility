@@ -20,7 +20,7 @@ public static class FMODAnimationEventEditorDriver
         if (Application.isPlaying) return;
 
         // Pump the FMOD editor system every frame so audio actually processes
-#if UNITY_6000_0_OR_NEWER
+#if !FMOD_LEGACY_API
         FMODUnity.EditorUtils.System.update();
 #else
         FMODUnity.RuntimeManager.CoreSystem.update();
