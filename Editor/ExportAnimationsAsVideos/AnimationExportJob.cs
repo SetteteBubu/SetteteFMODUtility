@@ -27,11 +27,6 @@ public static class AnimationExportJob
         cam.backgroundColor = Color.black;
         cam.fieldOfView = 50f;
 
-        // Frame camera relative to target
-        Vector3 pivot = target.transform.position + lookAtOffset;
-        camGo.transform.position = target.transform.position + cameraOffset;
-        camGo.transform.LookAt(pivot);
-
         // --- Sample clip frame by frame ---
         int totalFrames = Mathf.CeilToInt(clip.length * fps);
         float frameDuration = 1f / fps;
@@ -92,6 +87,12 @@ public static class AnimationExportJob
                 }
                 EditorApplication.QueuePlayerLoopUpdate();
                 HandleUtility.Repaint();
+
+                // Frame camera relative to target
+                Vector3 pivot = target.transform.position + lookAtOffset;
+                camGo.transform.position = target.transform.position + cameraOffset;
+                camGo.transform.LookAt(pivot);
+
                 // Render and grab
                 var prev = RenderTexture.active;
                 RenderTexture.active = rt;
