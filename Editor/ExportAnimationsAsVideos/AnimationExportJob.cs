@@ -158,4 +158,27 @@ public static class AnimationExportJob
 
         return result;
     }
+
+    public static AnimationExportPuppet2DBridge TryAutoAddPuppet2DBridge(GameObject target)
+    {
+        // Already has one, nothing to do
+        if (target.GetComponentInChildren<AnimationExportPuppet2DBridge>() != null)
+            return null;
+
+        // Check if any MonoBehaviour in the hierarchy is a Puppet2D_GlobalControl
+        bool hasPuppet2D = false;
+        foreach (var mb in target.GetComponentsInChildren<MonoBehaviour>(true))
+        {
+            if (mb != null && mb.GetType().Name == "Puppet2D_GlobalControl")
+            {
+                hasPuppet2D = true;
+                break;
+            }
+        }
+
+        if (!hasPuppet2D) return null;
+
+        Debug.Log("[AnimExporter] Puppet2D detected — auto-adding export bridge.");
+        return target.AddComponent<AnimationExportPuppet2DBridge>();
+    }
 }

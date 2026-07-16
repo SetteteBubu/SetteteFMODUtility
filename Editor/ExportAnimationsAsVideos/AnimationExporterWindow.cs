@@ -369,6 +369,8 @@ public class AnimationExporterWindow : EditorWindow
             return;
         }
 
+        var autoBridge = AnimationExportJob.TryAutoAddPuppet2DBridge(instance);
+
         string lastMp4 = null;
         try
         {
@@ -387,6 +389,8 @@ public class AnimationExporterWindow : EditorWindow
         finally
         {
             if (weCreatedIt) DestroyImmediate(instance);
+            else if (autoBridge != null)
+                DestroyImmediate(autoBridge); // clean up only if we added it
         }
 
         AssetDatabase.Refresh();
