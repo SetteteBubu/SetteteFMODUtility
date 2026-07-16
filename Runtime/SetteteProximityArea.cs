@@ -15,7 +15,7 @@ public class SetteteProximityArea : MonoBehaviour
     [SerializeField] private float resynchFmodEventAttenuationCurveRate = 0.5f;
 
     [Header("Gizmo")]
-    [SerializeField] private bool drawGizmo = true;
+    [SerializeField] private bool drawGizmo = false;
     [SerializeField] private Color gizmoColor = new Color(0f, 0.8f, 1f, 0.25f);
 
     [Header("Events")]
@@ -130,8 +130,7 @@ public class SetteteProximityArea : MonoBehaviour
         {
             try
             {
-                RuntimeManager.StudioSystem.getEvent(fmodEvent.Path, out EventDescription desc);
-
+                RuntimeManager.StudioSystem.getEventByID(fmodEvent.Guid, out EventDescription desc);
                 desc.is3D(out bool is3D);
                 if (!is3D) return 0f;
 
@@ -161,6 +160,8 @@ public class SetteteProximityArea : MonoBehaviour
             return max;
         }
 #endif
+
+        return 0f;
     }
 
     private void EnsureEventPlaying()

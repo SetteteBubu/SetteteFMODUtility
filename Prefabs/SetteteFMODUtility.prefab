@@ -44,62 +44,41 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 466be2431b9a1434eabe5a477df77fa2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp-firstpass::SetteteFMODUtilityManager
-  events3DColor: {r: 1, g: 1, b: 1, a: 1}
+  m_EditorClassIdentifier: Settete.FMODUtility.Runtime::SetteteFMODUtilityManager
+  visualize3DEvents: 0
+  visualize3DEventsTexts: 0
+  events3DColor: {r: 1, g: 0, b: 0, a: 1}
   events3DFontSize: 20
   visualize3DEventsAttenuationCurve: 0
   defaultAttenuationCurveMinColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  defaultAttenuationCurveMaxColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 0.5019608}
+  defaultAttenuationCurveMaxColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   events3DPathRootFilter: 
   events3DAttenuationCurvePathRootFilter: 
-  activeInstancesRefreshDelay: 0.5
-  visualizeSelectedAnimatorCurrentState: 1
+  visualizeLoadedBanks: 0
+  banksColor: {r: 0, g: 0, b: 0, a: 1}
+  activeInstancesRefreshDelay: 0.1
+  visualizeSelectedAnimatorCurrentState: 0
   defaultSelectedAnimatorCurrentStateAnchor: 2
-  defaultSelectedAnimatorCurrentStateWidth: 600
-  defaultSelectedAnimatorCurrentStateHeight: 100
+  defaultSelectedAnimatorCurrentStateWidth: 800
+  defaultSelectedAnimatorCurrentStateHeight: 600
   defaultSelectedAnimatorCurrentStateColor: {r: 0, g: 0, b: 0, a: 1}
-  defaultSelectedAnimatorCurrentStateImage: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
-  previewAnimationEventDatas:
-  - animationEventFunctionName: PlayOneShot2D
-    animationEventStringParameter: attack1
-    previewEvent:
-      Guid:
-        Data1: 1118554545
-        Data2: 1204179313
-        Data3: -1766533198
-        Data4: 1094718135
-      Path: event:/Test2DOneShot
+  defaultSelectedAnimatorCurrentStateImage: {fileID: 0}
+  AnimationEventsFunctionName: SetteteAudio
+  enable2DEventsVisualization: 0
   defaultDebugUICanvasSortingOrder: 999
-  defaultScrollViewImage: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
-  defaultViewportImage: {fileID: 10917, guid: 0000000000000000f000000000000000, type: 0}
-  defaultScrollViewWidth: 400
-  defaultScrollViewHeight: 400
+  defaultScrollViewImage: {fileID: 0}
+  defaultViewportImage: {fileID: 0}
+  defaultScrollViewWidth: 200
+  defaultScrollViewHeight: 200
   default2DEventUIElementHeight: 30
-  events2DColor: {r: 0, g: 0, b: 0, a: 1}
+  events2DColor: {r: 1, g: 0.6470588, b: 0, a: 1}
   defaultDebugUIAnchoring: 6
   defaultScrollSensitivity: 10
-  globalParametersToLog:
-  - GlobalParameter1
-  - GlobalParameter2
-  - GlobalParameter3
-  localParameterDatas:
-  - fmodEventToPoll:
-      Guid:
-        Data1: -1281248600
-        Data2: 1292835083
-        Data3: -315672692
-        Data4: 1435426466
-      Path: event:/Test2DOneShotWithParameter
-    localParameterName: LocalParameter1
-    lutID: Footsteps
-  parameterNamesLUT:
-  - lutID: Footsteps
-    lutEntries:
-    - Wood
-    - Stone
-    - Grass
-    - Concrete
-    - Metal
+  enableParameterVisualization: 0
+  parametersColor: {r: 0, g: 0, b: 0, a: 1}
+  globalParametersToLog: []
+  localParameterDatas: []
+  parameterNamesLUT: []
 --- !u!114 &5670763228744549881
 MonoBehaviour:
   m_ObjectHideFlags: 0

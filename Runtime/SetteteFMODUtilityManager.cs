@@ -53,20 +53,20 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     [Tooltip("Turn on/off the whole loaded FMOD banks visualization")]
     public bool visualizeLoadedBanks = false;
     [Tooltip("Color used to draw text in UI related to loaded FMOD banks")]
-    public Color banksColor = Color.cyan;
+    public Color banksColor = Color.black;
 
     [Header("Refresh Rate Settings")]
     [Tooltip("Delay in seconds between each active instances refresh")]
-    public float activeInstancesRefreshDelay = 1f;
+    public float activeInstancesRefreshDelay = 0.1f;
 
     [Tooltip("Visualize information regarding current animation and state of Animator in selected GameObject")]
     public bool visualizeSelectedAnimatorCurrentState = false;
     [Tooltip("Anchoring of panel displaying info regarding current animation and state of Animator in selected GameObject")]
     public TextAnchor defaultSelectedAnimatorCurrentStateAnchor = TextAnchor.UpperRight;
     [Tooltip("Width of panel displaying info regarding current animation and state of Animator in selected GameObject")]
-    public float defaultSelectedAnimatorCurrentStateWidth = 200f;
+    public float defaultSelectedAnimatorCurrentStateWidth = 800f;
     [Tooltip("Height of panel displaying info regarding current animation and state of Animator in selected GameObject")]
-    public float defaultSelectedAnimatorCurrentStateHeight = 200f;
+    public float defaultSelectedAnimatorCurrentStateHeight = 600f;
     [Tooltip("Color used to draw text in UI related to current animation and state of Animator in selected GameObject")]
     public Color defaultSelectedAnimatorCurrentStateColor = Color.black;
     [Tooltip("Referenced just to grab Unity's built-in sprite, but feel free to customize")]
@@ -98,6 +98,8 @@ public class SetteteFMODUtilityManager : MonoBehaviour
 
     [Tooltip("Turn on/off the whole parameters visualization")]
     public bool enableParameterVisualization = false;
+    [Tooltip("Color used to draw parameter values in the Game View UI")]
+    public Color parametersColor = Color.black;
     [ParamRef]
     public string[] globalParametersToLog;
     public LocalParameterData[] localParameterDatas;
@@ -181,6 +183,8 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         //Update loaded banks visualization
         UpdateLoadedBanksUI();
 
+        UpdateDebugUI();
+
 #if UNITY_EDITOR
         HandleAnimatorInfoPanel();
 #endif
@@ -236,6 +240,11 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         if (toRemove != null)
             foreach (var key in toRemove)
                 cachedBankUIElements.Remove(key);
+    }
+
+    void UpdateDebugUI()
+    {
+        debugUIScrollRect.gameObject.SetActive(enable2DEventsVisualization || enableParameterVisualization || visualizeLoadedBanks);
     }
 
     void UpdateParameters()
@@ -391,15 +400,8 @@ public class SetteteFMODUtilityManager : MonoBehaviour
 
             if (!currentActiveInstances.Any(c => c.handle == inst.handle))
             {
-                if (is3D)
-                {
-                    Stop3DEventVisualization(inst);
-                }
-                else
-                {
-                    Delete2DEventUIElement(inst);
-                }
-
+                Stop3DEventVisualization(inst);
+                Delete2DEventUIElement(inst);
                 debugManager.InvalidateToken(GetStableId(inst).ToString());
             }
         }
@@ -481,16 +483,21 @@ public class SetteteFMODUtilityManager : MonoBehaviour
 
     void Stop3DEventVisualization(EventInstance eventInstance, bool disableText = true, bool disableAttenCurve = true)
     {
+        string id = GetStableId(eventInstance).ToString();
+
         if (disableText)
         {
-            string id = GetStableId(eventInstance).ToString();
             debugManager.StopDrawing(id);
-            active3DEventsTokens.Remove(id);
-            ReleaseStableId(eventInstance);
         }
 
         if (disableAttenCurve)
             Stop3DEventAttenuationCurveVisualization(eventInstance);
+
+        if (disableText && disableAttenCurve)
+        {
+            active3DEventsTokens.Remove(id);
+            ReleaseStableId(eventInstance);
+        }
     }
 
     void Create2DEventUIElement(EventInstance eventInstance)
@@ -545,6 +552,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
                 return;
             }
             event2DElementText.enabled = true;
+            event2DElementText.color = parametersColor;
             RuntimeManager.StudioSystem.getParameterByName(globalParameter, out float paramVal);
             string globalParamString = globalParameter + ":" + paramVal;
             event2DElementText.text = globalParamString;
@@ -565,6 +573,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
             }
 
             event2DElementText.enabled = true;
+            event2DElementText.color = parametersColor;
             // Try to find the first active instance for this event
             for (int j = 0; j < cachedActiveInstances.Count; j++)
             {
@@ -858,14 +867,14 @@ public class SetteteFMODUtilityManager : MonoBehaviour
 #if UNITY_EDITOR
     public static void LoadFMODPreviewBanks()
     {
-#if !FMOD_LEGACY_API
-        var method = typeof(FMODUnity.EditorUtils).GetMethod(
-            "LoadPreviewBanks",
-            System.Reflection.BindingFlags.Public |
-            System.Reflection.BindingFlags.NonPublic |
-            System.Reflection.BindingFlags.Static);
-        method?.Invoke(null, null);
-#endif
+        #if !FMOD_LEGACY_API
+                var method = typeof(FMODUnity.EditorUtils).GetMethod(
+                    "LoadPreviewBanks",
+                    System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.NonPublic |
+                    System.Reflection.BindingFlags.Static);
+                method?.Invoke(null, null);
+        #endif
     }
 
     void HandleAnimatorInfoPanel()
@@ -882,7 +891,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
                 GameObject prefabAsset = PrefabUtility.GetCorrespondingObjectFromOriginalSource(currentSelectedGO);
                 string prefabName = prefabAsset != null ? prefabAsset.name : "None";
 
-                sb.AppendLine($"GameObject Name: [{currentSelectedGO.name}],\nPrefab Name: [{prefabName}]");
+                sb.AppendLine($"GameObject Name: [{currentSelectedGO.name}], Prefab Name: [{prefabName}]");
 
                 for (int i = 0; i < animator.layerCount; i++)
                 {
@@ -906,7 +915,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
                         }
                     }
 
-                    sb.AppendLine($"[Layer {i}: {layerName}] State: {stateName}\nClip: {clipName}");
+                    sb.AppendLine($"[Layer {i}: {layerName}] State: {stateName}, Clip: {clipName}");
                 }
 
                 shouldDisplayAnimatorInfo = true;
@@ -998,6 +1007,18 @@ public class SetteteFMODUtilityManager : MonoBehaviour
             {
                 go.GetComponent<TextMeshProUGUI>().color = banksColor;
             }
+        }
+
+        //Synch parameters color
+        if (cachedGlobalParametersUIElements != null)
+        {
+            foreach (var go in cachedGlobalParametersUIElements.Values)
+                go.GetComponent<TextMeshProUGUI>().color = parametersColor;
+        }
+        if (cachedLocalParametersUIElements != null)
+        {
+            foreach (var go in cachedLocalParametersUIElements.Values)
+                go.GetComponent<TextMeshProUGUI>().color = parametersColor;
         }
 
         //Synch animator info panel

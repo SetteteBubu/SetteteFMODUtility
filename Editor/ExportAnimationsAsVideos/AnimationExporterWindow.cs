@@ -83,6 +83,8 @@ public class AnimationExporterWindow : EditorWindow
         _prevResolution = _resolution;
 
         _bannerTexture = LoadTextureRelativeToEditor("Resources/settete_banner.png");
+
+        _outputFolder = EditorPrefs.GetString("SATVE_OutputFolder", _outputFolder);
     }
 
     private void OnDisable()
@@ -244,13 +246,21 @@ public class AnimationExporterWindow : EditorWindow
         EditorGUILayout.Space(4);
         using (new EditorGUILayout.HorizontalScope())
         {
-            _outputFolder = EditorGUILayout.TextField("Output Folder", _outputFolder);
+            var newFolder = EditorGUILayout.TextField("Output Folder", _outputFolder);
+            if (newFolder != _outputFolder)
+            {
+                _outputFolder = newFolder;
+                EditorPrefs.SetString("SATVE_OutputFolder", _outputFolder);
+            }
             if (GUILayout.Button("Browse…", GUILayout.Width(70)))
             {
                 string chosen = EditorUtility.OpenFolderPanel(
                     "Select Export Folder", _outputFolder, "");
                 if (!string.IsNullOrEmpty(chosen))
+                {
                     _outputFolder = chosen;
+                    EditorPrefs.SetString("SATVE_OutputFolder", _outputFolder);
+                }
             }
         }
 
@@ -359,6 +369,7 @@ public class AnimationExporterWindow : EditorWindow
             return;
         }
 
+        string lastMp4 = null;
         try
         {
             foreach (var clip in toExport)
@@ -368,8 +379,9 @@ public class AnimationExporterWindow : EditorWindow
                 Directory.CreateDirectory(clipFolder);
                 AnimationExportJob.Run(instance, clip, clipFolder, _fps,
                     _resolution, _cameraOffset, _lookAtOffset);
-                FfmpegUtils.StitchToMp4(clipFolder,
-                    Path.Combine(_outputFolder, sanitized + ".mp4"), _fps);
+                string mp4Path = Path.Combine(_outputFolder, sanitized + ".mp4");
+                FfmpegUtils.StitchToMp4(clipFolder, mp4Path, _fps);
+                lastMp4 = mp4Path;
             }
         }
         finally
@@ -378,7 +390,11 @@ public class AnimationExporterWindow : EditorWindow
         }
 
         AssetDatabase.Refresh();
-        EditorUtility.DisplayDialog("Done",
-            $"Exported {toExport.Count} clip(s) to {_outputFolder}", "OK");
+        bool openFolder = EditorUtility.DisplayDialog("Done",
+            $"Exported {toExport.Count} clip(s) to {_outputFolder}",
+            "Open File Location", "Close");
+
+        if (openFolder && lastMp4 != null)
+            EditorUtility.RevealInFinder(lastMp4);
     }
 }

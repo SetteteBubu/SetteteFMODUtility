@@ -8,6 +8,7 @@ public class SetteteFMODUtilityManagerEditor : Editor
     private bool _3dTextFoldout;
     private bool _3dAttenuationSettingsFoldout;
     private bool _2dSettingsFoldout;
+    private bool _gameViewDisplayFoldout;
     private bool _animSettingsFoldout;
 
     // ── Serialized properties ──────────────────────────────────────
@@ -37,6 +38,7 @@ public class SetteteFMODUtilityManagerEditor : Editor
     private SerializedProperty _events2DColor;
     private SerializedProperty _visualizeLoadedBanks;
     private SerializedProperty _banksColor;
+    private SerializedProperty _parametersColor;
     private SerializedProperty _defaultDebugUIAnchoring;
     private SerializedProperty _defaultScrollSensitivity;
 
@@ -68,9 +70,10 @@ public class SetteteFMODUtilityManagerEditor : Editor
     private static readonly Color Color2DEvents = new Color(0f, 0.4f, 1f, 30f / 255f);
     private static readonly Color ColorRefreshRate = new Color(0f, 1f, 0f, 30f / 255f);
     private static readonly Color ColorAnimationSneakTool = new Color(0.6f, 0f, 1f, 30f / 255f);
-    private static readonly Color ColorParameters = new Color(1f, 1f, 0f, 30f / 255f);
+    private static readonly Color ColorParameters = new Color(0f, 0.4f, 1f, 30f / 255f);
     private static readonly Color ColorVideoExporter = new Color(1f, 0.5f, 0f, 30f / 255f);
-    private static readonly Color ColorLoadedBanks = new Color(0f, 1f, 1f, 30f / 255f);
+    private static readonly Color ColorLoadedBanks = new Color(0f, 0.4f, 1f, 30f / 255f);
+    private static readonly Color ColorGameViewDisplay = new Color(0f, 0.4f, 1f, 30f / 255f);
 
     private GUIStyle _sectionBoxStyle3D;
     private GUIStyle _sectionBoxStyle2D;
@@ -79,6 +82,7 @@ public class SetteteFMODUtilityManagerEditor : Editor
     private GUIStyle _sectionBoxStyleParameters;
     private GUIStyle _sectionBoxStyleVideoExporter;
     private GUIStyle _sectionBoxStyleLoadedBanks;
+    private GUIStyle _sectionBoxStyleGameViewDisplay;
 
     private Texture2D _bannerTexture;
 
@@ -136,6 +140,7 @@ public class SetteteFMODUtilityManagerEditor : Editor
         _events3DAttenuationCurvePathRootFilter = serializedObject.FindProperty("events3DAttenuationCurvePathRootFilter");
         _visualizeLoadedBanks = serializedObject.FindProperty("visualizeLoadedBanks");
         _banksColor = serializedObject.FindProperty("banksColor");
+        _parametersColor = serializedObject.FindProperty("parametersColor");
 
         // 2D Events
         _enable2DEventsVisualization = serializedObject.FindProperty("enable2DEventsVisualization");
@@ -170,6 +175,7 @@ public class SetteteFMODUtilityManagerEditor : Editor
         _3dTextFoldout = SessionState.GetBool("SFMOD_3dTextFoldout", false);
         _3dAttenuationSettingsFoldout = SessionState.GetBool("SFMOD_3dAttenFoldout", false);
         _2dSettingsFoldout = SessionState.GetBool("SFMOD_2dSettingsFoldout", false);
+        _gameViewDisplayFoldout = SessionState.GetBool("SFMOD_gameViewDisplayFoldout", false);
         _animSettingsFoldout = SessionState.GetBool("SFMOD_animSettingsFoldout", false);
     }
 
@@ -187,15 +193,17 @@ public class SetteteFMODUtilityManagerEditor : Editor
         EditorGUILayout.Space(6);
         DrawSection3DEvents();
         EditorGUILayout.Space(6);
+        DrawSectionGameViewDisplaySettings();
+        EditorGUILayout.Space(6);
         DrawSection2DEvents();
         EditorGUILayout.Space(6);
         DrawSectionLoadedBanks();
         EditorGUILayout.Space(6);
+        DrawSectionParameters();
+        EditorGUILayout.Space(6);
         DrawSectionMiscellaneous();
         EditorGUILayout.Space(6);
         DrawSectionAnimation();
-        EditorGUILayout.Space(6);
-        DrawSectionParameters();
         EditorGUILayout.Space(6);
         DrawSectionVideoExporter();
 
@@ -386,18 +394,36 @@ public class SetteteFMODUtilityManagerEditor : Editor
 
             EditorGUILayout.PropertyField(_enable2DEventsVisualization,
                 new GUIContent("Enable 2D Events Visualization"));
+        }
+    }
+
+    // ── Section: Game View Display Settings ────────────────────────
+
+    private void DrawSectionGameViewDisplaySettings()
+    {
+        bool anyEnabled = _enable2DEventsVisualization.boolValue ||
+                          _visualizeLoadedBanks.boolValue ||
+                          _enableParameterVisualization.boolValue;
+
+        DrawSectionHeader("Game View Display Settings");
+        using (new EditorGUILayout.VerticalScope(_sectionBoxStyleGameViewDisplay))
+        {
+            EditorGUILayout.LabelField(
+                "Shared display settings for all Game View visualizations. Enabled when at least one visualization is active.",
+                _explanatoryLabelStyle);
 
             EditorGUILayout.Space(4);
 
-            using (new EditorGUI.DisabledScope(!_enable2DEventsVisualization.boolValue))
+            using (new EditorGUI.DisabledScope(!anyEnabled))
             {
                 using (new EditorGUI.IndentLevelScope())
                 {
-                    _2dSettingsFoldout = EditorGUILayout.Foldout(_2dSettingsFoldout, "Display Settings", true, _subHeaderFoldoutStyle);
-                    SessionState.SetBool("SFMOD_2dSettingsFoldout", _2dSettingsFoldout);
+                    _gameViewDisplayFoldout = EditorGUILayout.Foldout(
+                        _gameViewDisplayFoldout, "Display Settings", true, _subHeaderFoldoutStyle);
+                    SessionState.SetBool("SFMOD_gameViewDisplayFoldout", _gameViewDisplayFoldout);
                 }
 
-                if (_2dSettingsFoldout)
+                if (_gameViewDisplayFoldout)
                 {
                     using (new EditorGUI.IndentLevelScope())
                     {
@@ -485,6 +511,10 @@ public class SetteteFMODUtilityManagerEditor : Editor
 
             using (new EditorGUI.DisabledScope(!_enableParameterVisualization.boolValue))
             {
+                EditorGUILayout.PropertyField(_parametersColor, new GUIContent("Text Color"));
+
+                EditorGUILayout.Space(4);
+
                 // Unity's built-in array/list foldout headers ignore GUI.enabled,
                 // so we dim everything manually via GUI.color as well.
                 Color previousColor = GUI.color;
@@ -573,6 +603,9 @@ public class SetteteFMODUtilityManagerEditor : Editor
 
         _sectionBoxStyleLoadedBanks = new GUIStyle(_sectionBoxStyle);
         _sectionBoxStyleLoadedBanks.normal.background = MakeSolidTexture(ColorLoadedBanks);
+
+        _sectionBoxStyleGameViewDisplay = new GUIStyle(_sectionBoxStyle);
+        _sectionBoxStyleGameViewDisplay.normal.background = MakeSolidTexture(ColorGameViewDisplay);
 
         _subHeaderFoldoutStyle = new GUIStyle(EditorStyles.foldout)
         {
