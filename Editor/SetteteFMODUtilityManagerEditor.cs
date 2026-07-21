@@ -15,6 +15,7 @@ public class SetteteFMODUtilityManagerEditor : Editor
 
     // Animation Events function
     private SerializedProperty _animationEventsFunctionName;
+    private SerializedProperty _enableAnimationEventsPreview;
 
     // 3D Events
     private SerializedProperty _visualize3DEvents;
@@ -70,6 +71,7 @@ public class SetteteFMODUtilityManagerEditor : Editor
     private static readonly Color Color2DEvents = new Color(0f, 0.4f, 1f, 30f / 255f);
     private static readonly Color ColorRefreshRate = new Color(0f, 1f, 0f, 30f / 255f);
     private static readonly Color ColorAnimationSneakTool = new Color(0.6f, 0f, 1f, 30f / 255f);
+    private static readonly Color ColorAnimationEventsPreviewTool = new Color(0f, 1f, 1f, 30f / 255f);
     private static readonly Color ColorParameters = new Color(0f, 0.4f, 1f, 30f / 255f);
     private static readonly Color ColorVideoExporter = new Color(1f, 0.5f, 0f, 30f / 255f);
     private static readonly Color ColorLoadedBanks = new Color(0f, 0.4f, 1f, 30f / 255f);
@@ -79,6 +81,7 @@ public class SetteteFMODUtilityManagerEditor : Editor
     private GUIStyle _sectionBoxStyle2D;
     private GUIStyle _sectionBoxStyleRefreshRate;
     private GUIStyle _sectionBoxStyleAnimation;
+    private GUIStyle _sectionBoxStyleAnimationEventsPreview;
     private GUIStyle _sectionBoxStyleParameters;
     private GUIStyle _sectionBoxStyleVideoExporter;
     private GUIStyle _sectionBoxStyleLoadedBanks;
@@ -127,6 +130,7 @@ public class SetteteFMODUtilityManagerEditor : Editor
 
         // Animation events functions name
         _animationEventsFunctionName = serializedObject.FindProperty("AnimationEventsFunctionName");
+        _enableAnimationEventsPreview = serializedObject.FindProperty("enableAnimationEventsPreview");
 
         // 3D Events
         _visualize3DEvents = serializedObject.FindProperty("visualize3DEvents");
@@ -186,10 +190,7 @@ public class SetteteFMODUtilityManagerEditor : Editor
 
         DrawBrandingBanner();
         EditorGUILayout.Space(6);
-        using (new EditorGUI.DisabledScope(true))
-        {
-            EditorGUILayout.PropertyField(_animationEventsFunctionName);
-        }
+        DrawSectionAnimationEventsPreview();
         EditorGUILayout.Space(6);
         DrawSection3DEvents();
         EditorGUILayout.Space(6);
@@ -493,6 +494,19 @@ public class SetteteFMODUtilityManagerEditor : Editor
         }
     }
 
+    private void DrawSectionAnimationEventsPreview()
+    {
+        DrawSectionHeader("Animation Events Preview");
+        using (new EditorGUILayout.VerticalScope(_sectionBoxStyleAnimationEventsPreview))
+        {
+            using (new EditorGUI.DisabledScope(true))
+            {
+                EditorGUILayout.PropertyField(_animationEventsFunctionName);
+            }
+            EditorGUILayout.PropertyField(_enableAnimationEventsPreview);
+        }
+    }
+
     // ── Section: Parameters ────────────────────────────────────────
 
     private void DrawSectionParameters()
@@ -594,6 +608,9 @@ public class SetteteFMODUtilityManagerEditor : Editor
 
         _sectionBoxStyleAnimation = new GUIStyle(_sectionBoxStyle);
         _sectionBoxStyleAnimation.normal.background = MakeSolidTexture(ColorAnimationSneakTool);
+
+        _sectionBoxStyleAnimationEventsPreview = new GUIStyle(_sectionBoxStyle);
+        _sectionBoxStyleAnimationEventsPreview.normal.background = MakeSolidTexture(ColorAnimationEventsPreviewTool);
 
         _sectionBoxStyleParameters = new GUIStyle(_sectionBoxStyle);
         _sectionBoxStyleParameters.normal.background = MakeSolidTexture(ColorParameters);

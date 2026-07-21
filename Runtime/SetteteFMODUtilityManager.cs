@@ -14,6 +14,7 @@ using UnityEngine.UI;
 public class SetteteFMODUtilityManager : MonoBehaviour
 {
     public static readonly string AnimationEventsFunctionNameConstant = "SetteteAudio";
+    public static SetteteFMODUtilityManager instance;
 
     [Serializable]
     public struct LocalParameterData
@@ -75,6 +76,8 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     [Header("Trigger Animation Events")]
     [Tooltip("Function to call on SetteteAnimationEventReceiver to trigger audio. Will also be used to preview events in editor")]
     public string AnimationEventsFunctionName = AnimationEventsFunctionNameConstant;
+    [Tooltip("Enable animation events preview")]
+    public bool enableAnimationEventsPreview = false;
 
     [Tooltip("Turn on/off the whole 2D events visualization")]
     public bool enable2DEventsVisualization = false;
@@ -149,13 +152,21 @@ public class SetteteFMODUtilityManager : MonoBehaviour
 
     private void Awake()
     {
-        debugManager = GetComponent<SetteteFMODUtilityDebugManager>();
-        cachedActiveInstances = new();
-        cached2DEventsUIElements = new();
-        cachedGlobalParametersUIElements = new();
-        cachedLocalParametersUIElements = new();
-        cachedLocalParamValues = new();
-        cachedBankUIElements = new();
+        if (instance == null)
+        {
+            instance = this;
+            debugManager = GetComponent<SetteteFMODUtilityDebugManager>();
+            cachedActiveInstances = new();
+            cached2DEventsUIElements = new();
+            cachedGlobalParametersUIElements = new();
+            cachedLocalParametersUIElements = new();
+            cachedLocalParamValues = new();
+            cachedBankUIElements = new();
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void Start()
@@ -867,14 +878,14 @@ public class SetteteFMODUtilityManager : MonoBehaviour
 #if UNITY_EDITOR
     public static void LoadFMODPreviewBanks()
     {
-        #if !FMOD_LEGACY_API
-                var method = typeof(FMODUnity.EditorUtils).GetMethod(
-                    "LoadPreviewBanks",
-                    System.Reflection.BindingFlags.Public |
-                    System.Reflection.BindingFlags.NonPublic |
-                    System.Reflection.BindingFlags.Static);
-                method?.Invoke(null, null);
-        #endif
+#if !FMOD_LEGACY_API
+        var method = typeof(FMODUnity.EditorUtils).GetMethod(
+            "LoadPreviewBanks",
+            System.Reflection.BindingFlags.Public |
+            System.Reflection.BindingFlags.NonPublic |
+            System.Reflection.BindingFlags.Static);
+        method?.Invoke(null, null);
+#endif
     }
 
     void HandleAnimatorInfoPanel()

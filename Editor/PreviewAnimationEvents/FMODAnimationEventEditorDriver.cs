@@ -7,6 +7,9 @@ using UnityEngine;
 public static class FMODAnimationEventEditorDriver
 {
     private static double _lastTime;
+    private static bool _refreshAnimators = true;
+    private static Animator[] _animators;
+    private static bool _previewActive = false;
 
     static FMODAnimationEventEditorDriver()
     {
@@ -18,6 +21,30 @@ public static class FMODAnimationEventEditorDriver
     private static void OnEditorUpdate()
     {
         if (Application.isPlaying) return;
+
+        if (SetteteFMODUtilityManager.instance == null)
+        {
+            _previewActive = false;
+            _refreshAnimators = false;
+            return;
+        }
+
+        if (SetteteFMODUtilityManager.instance.enableAnimationEventsPreview)
+        {
+            if (!_previewActive)
+            {
+                _refreshAnimators = true;
+            }
+
+            _previewActive = true;
+        }
+        else
+        {
+            _previewActive = false;
+            _refreshAnimators = false;
+
+            return;
+        }
 
         // Pump the FMOD editor system every frame so audio actually processes
 #if !FMOD_LEGACY_API
@@ -32,8 +59,13 @@ public static class FMODAnimationEventEditorDriver
             return;
         }
 
-        Animator[] animators = GameObject.FindObjectsByType<Animator>(FindObjectsSortMode.None);
-        foreach (var animator in animators)
+        if (_refreshAnimators)
+        {
+            _animators = GameObject.FindObjectsByType<Animator>(FindObjectsSortMode.None);
+            _refreshAnimators = false;
+        }
+
+        foreach (var animator in _animators)
         {
             if (animator == null) continue;
 
@@ -59,6 +91,7 @@ public static class FMODAnimationEventEditorDriver
 
     private static void TryFireCrossedEvents(Animator animator)
     {
+        if (animator.runtimeAnimatorController == null) return;
         if (animator.layerCount == 0) return;
 
         float currentTime = GetAnimationWindowCurrentTime();
