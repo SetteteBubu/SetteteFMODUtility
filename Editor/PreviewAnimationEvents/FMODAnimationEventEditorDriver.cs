@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 [InitializeOnLoad]
@@ -11,25 +12,37 @@ public static class FMODAnimationEventEditorDriver
     private static Animator[] _animators;
     private static bool _previewActive = false;
 
+    private static SetteteFMODUtilityManager _editorManager;
+
+    private static SetteteFMODUtilityManager GetEditorManager()
+    {
+        if (_editorManager != null) return _editorManager;
+        _editorManager = Object.FindFirstObjectByType<SetteteFMODUtilityManager>(
+            FindObjectsInactive.Include);
+        return _editorManager;
+    }
+
     static FMODAnimationEventEditorDriver()
     {
         EditorApplication.update += OnEditorUpdate;
         AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
         EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        EditorSceneManager.sceneOpened += (_, __) => _editorManager = null;
+        EditorSceneManager.sceneClosing += (_, __) => _editorManager = null;
     }
 
     private static void OnEditorUpdate()
     {
         if (Application.isPlaying) return;
 
-        if (SetteteFMODUtilityManager.instance == null)
+        if (GetEditorManager() == null)
         {
             _previewActive = false;
             _refreshAnimators = false;
             return;
         }
 
-        if (SetteteFMODUtilityManager.instance.enableAnimationEventsPreview)
+        if (GetEditorManager().enableAnimationEventsPreview)
         {
             if (!_previewActive)
             {
