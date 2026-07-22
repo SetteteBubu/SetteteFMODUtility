@@ -7,11 +7,6 @@ using UnityEngine;
 [InitializeOnLoad]
 public static class FMODAnimationEventEditorDriver
 {
-    private static double _lastTime;
-    private static bool _refreshAnimators = true;
-    private static Animator[] _animators;
-    private static bool _previewActive = false;
-
     private static SetteteFMODUtilityManager _editorManager;
 
     private static SetteteFMODUtilityManager GetEditorManager()
@@ -35,27 +30,8 @@ public static class FMODAnimationEventEditorDriver
     {
         if (Application.isPlaying) return;
 
-        if (GetEditorManager() == null)
+        if (GetEditorManager() == null || !GetEditorManager().enableAnimationEventsPreview)
         {
-            _previewActive = false;
-            _refreshAnimators = false;
-            return;
-        }
-
-        if (GetEditorManager().enableAnimationEventsPreview)
-        {
-            if (!_previewActive)
-            {
-                _refreshAnimators = true;
-            }
-
-            _previewActive = true;
-        }
-        else
-        {
-            _previewActive = false;
-            _refreshAnimators = false;
-
             return;
         }
 
@@ -72,18 +48,7 @@ public static class FMODAnimationEventEditorDriver
             return;
         }
 
-        if (_refreshAnimators)
-        {
-            _animators = GameObject.FindObjectsByType<Animator>(FindObjectsSortMode.None);
-            _refreshAnimators = false;
-        }
-
-        foreach (var animator in _animators)
-        {
-            if (animator == null) continue;
-
-            TryFireCrossedEvents(animator);
-        }
+        TryFireCrossedEvents();
     }
 
     private static float GetAnimationWindowCurrentTime()
@@ -102,35 +67,44 @@ public static class FMODAnimationEventEditorDriver
 
     private static float _lastAnimationTime = -1f;
 
-    private static void TryFireCrossedEvents(Animator animator)
+    private static void TryFireCrossedEvents()
     {
-        if (animator.runtimeAnimatorController == null) return;
-        if (animator.layerCount == 0) return;
-
         float currentTime = GetAnimationWindowCurrentTime();
+        AnimationClip clip = GetAnimationWindowCurrentClip();
 
-        for (int i = 0; i < animator.layerCount; i++)
+        if (clip == null || clip.events.Length == 0)
         {
-            AnimatorClipInfo[] clipInfos = animator.GetCurrentAnimatorClipInfo(i);
+            _lastAnimationTime = currentTime;
+            return;
+        }
 
-            foreach (var clipInfo in clipInfos)
-            {
-                AnimationClip clip = clipInfo.clip;
-                if (clip == null || clip.events.Length == 0) continue;
+        float previousTime = _lastAnimationTime < 0f ? currentTime : _lastAnimationTime;
 
-                float previousTime = _lastAnimationTime < 0f ? currentTime : _lastAnimationTime;
-
-                foreach (var evt in clip.events)
-                {
-                    bool crossed = evt.time > previousTime && evt.time <= currentTime;
-                    if (!crossed) continue;
-
-                    FireEvent(evt);
-                }
-            }
+        foreach (var evt in clip.events)
+        {
+            bool crossed = evt.time > previousTime && evt.time <= currentTime;
+            if (!crossed) continue;
+            FireEvent(evt);
         }
 
         _lastAnimationTime = currentTime;
+    }
+
+    private static AnimationClip GetAnimationWindowCurrentClip()
+    {
+        var animWindowType = typeof(Editor).Assembly
+            .GetType("UnityEditor.AnimationWindow");
+
+        var windows = Resources.FindObjectsOfTypeAll(animWindowType);
+        if (windows == null || windows.Length == 0) return null;
+
+        var window = windows[0];
+
+        var clipProperty = animWindowType.GetProperty("animationClip",
+            BindingFlags.Public | BindingFlags.Instance);
+        if (clipProperty == null) return null;
+
+        return clipProperty.GetValue(window) as AnimationClip;
     }
 
     private static void FireEvent(AnimationEvent evt)
