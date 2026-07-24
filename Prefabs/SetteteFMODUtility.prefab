@@ -64,14 +64,15 @@ MonoBehaviour:
   defaultSelectedAnimatorCurrentStateColor: {r: 0, g: 0, b: 0, a: 1}
   defaultSelectedAnimatorCurrentStateImage: {fileID: 0}
   AnimationEventsFunctionName: SetteteAudio
+  enableAnimationEventsPreview: 0
   enable2DEventsVisualization: 0
   defaultDebugUICanvasSortingOrder: 999
   defaultScrollViewImage: {fileID: 0}
   defaultViewportImage: {fileID: 0}
-  defaultScrollViewWidth: 200
+  defaultScrollViewWidth: 600
   defaultScrollViewHeight: 200
   default2DEventUIElementHeight: 30
-  events2DColor: {r: 1, g: 0.6470588, b: 0, a: 1}
+  events2DColor: {r: 0, g: 0, b: 0, a: 1}
   defaultDebugUIAnchoring: 6
   defaultScrollSensitivity: 10
   enableParameterVisualization: 0

@@ -88,13 +88,13 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     [Tooltip("Referenced just to grab Unity's built-in sprite, but feel free to customize")]
     public Sprite defaultViewportImage;
     [Tooltip("Default width of overall debug UI scroll rect")]
-    public float defaultScrollViewWidth = 200f;
+    public float defaultScrollViewWidth = 600f;
     [Tooltip("Default height of overall debug UI scroll rect")]
     public float defaultScrollViewHeight = 200f;
     [Tooltip("2D UI Element default height which effectively dictates font size for the text")]
     public float default2DEventUIElementHeight = 30f;
     [Tooltip("Color used to draw text in UI related to 2D events")]
-    public Color events2DColor = new(1f, 0.6470588f, 0f, 1f);
+    public Color events2DColor = Color.black;
     public TextAnchor defaultDebugUIAnchoring = TextAnchor.LowerLeft;
     [Tooltip("Default debug UI scroll sensitivity")]
     public float defaultScrollSensitivity = 10f;
@@ -104,7 +104,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
     [Tooltip("Color used to draw parameter values in the Game View UI")]
     public Color parametersColor = Color.black;
     [ParamRef]
-    public string[] globalParametersToLog;
+    public List<string> globalParametersToLog;
     public LocalParameterData[] localParameterDatas;
     public List<ParameterNamesLUT> parameterNamesLUT;
 
@@ -182,6 +182,7 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         if (activeInstancesRefreshDelayCounter >= activeInstancesRefreshDelay)
         {
             RefreshActiveInstances();
+            SynchParametersToUI();
             activeInstancesRefreshDelayCounter = 0;
         }
 
@@ -528,29 +529,40 @@ public class SetteteFMODUtilityManager : MonoBehaviour
 
     void Create2DGlobalParameterUIElement(string globalParameter)
     {
+        if (cachedGlobalParametersUIElements.ContainsKey(globalParameter)) return;
+
         GameObject event2DElement = CreateUIElement();
         cachedGlobalParametersUIElements.Add(globalParameter, event2DElement);
         Update2DGlobalParameterUIElement(globalParameter);
     }
 
-#if UNITY_EDITOR
-    void CreateLocalParameterUIElement(LocalParameterData localParameterData)
-    {
-        GameObject event2DElement = CreateUIElement();
-        cachedLocalParametersUIElements.Add(localParameterData, event2DElement);
-        UpdateLocalParameterUIElement(localParameterData);
-    }
-#endif
-
-    //Would global parameters UI elements be ever deleted?
-    /*void Delete2DGlobalParameterUIElement(string globalParameter)
+    void Delete2DGlobalParameterUIElement(string globalParameter)
     {
         if (cachedGlobalParametersUIElements.ContainsKey(globalParameter))
         {
             Destroy(cachedGlobalParametersUIElements[globalParameter]);
             cachedGlobalParametersUIElements.Remove(globalParameter);
         }
-    }*/
+    }
+
+#if UNITY_EDITOR
+    void CreateLocalParameterUIElement(LocalParameterData localParameterData)
+    {
+        if (cachedLocalParametersUIElements.ContainsKey(localParameterData)) return;
+
+        GameObject event2DElement = CreateUIElement();
+        cachedLocalParametersUIElements.Add(localParameterData, event2DElement);
+        UpdateLocalParameterUIElement(localParameterData);
+    }
+
+    void DeleteLocalParameterUIElement(LocalParameterData localParameterData)
+    {
+        if (!cachedLocalParametersUIElements.ContainsKey(localParameterData)) return;
+
+        Destroy(cachedLocalParametersUIElements[localParameterData]);
+        cachedLocalParametersUIElements.Remove(localParameterData);
+    }
+#endif
 
     void Update2DGlobalParameterUIElement(string globalParameter)
     {
@@ -873,6 +885,50 @@ public class SetteteFMODUtilityManager : MonoBehaviour
         rt.anchorMin = anchorValue;
         rt.anchorMax = anchorValue;
         rt.pivot = anchorValue;
+    }
+
+    void SynchParametersToUI()
+    {
+        if (!enableParameterVisualization) return;
+
+        //Remove global parameters from UI no longer in list
+        List<string> toRemoveGlobal = new();
+        foreach (var kvp in cachedGlobalParametersUIElements)
+        {
+            if (!globalParametersToLog.Contains(kvp.Key))
+            {
+                toRemoveGlobal.Add(kvp.Key);
+            }
+        }
+        foreach (string globalParamToRemove in toRemoveGlobal)
+        {
+            Delete2DGlobalParameterUIElement(globalParamToRemove);
+        }
+        //Add new Global Parameters if present
+        foreach (var globalParameters in globalParametersToLog)
+        {
+            Create2DGlobalParameterUIElement(globalParameters);
+        }
+#if UNITY_EDITOR
+        //Remove local parameters from UI no longer in list
+        List<LocalParameterData> toRemoveLocal = new();
+        foreach (var kvp in cachedLocalParametersUIElements)
+        {
+            if (!localParameterDatas.Contains(kvp.Key))
+            {
+                toRemoveLocal.Add(kvp.Key);
+            }
+        }
+        foreach (LocalParameterData localParamToRemove in toRemoveLocal)
+        {
+            DeleteLocalParameterUIElement(localParamToRemove);
+        }
+        //Add new Local Parameters if present
+        foreach (var localParameters in localParameterDatas)
+        {
+            CreateLocalParameterUIElement(localParameters);
+        }
+#endif
     }
 
 #if UNITY_EDITOR
