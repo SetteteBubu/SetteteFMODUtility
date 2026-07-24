@@ -190,6 +190,20 @@ public class AnimationExporterWindow : EditorWindow
 
         if (_clips.Count > 0)
         {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Select All", GUILayout.Width(90)))
+                for (int i = 0; i < _clipToggles.Count; i++) _clipToggles[i] = true;
+            GUILayout.Space(8);
+            if (GUILayout.Button("Select None", GUILayout.Width(90)))
+                for (int i = 0; i < _clipToggles.Count; i++) _clipToggles[i] = false;
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(2);
+        }
+
+        if (_clips.Count > 0)
+        {
             float itemHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
             float maxScrollHeight = itemHeight * 8f;
             float scrollHeight = Mathf.Min(_clips.Count * itemHeight, maxScrollHeight);
